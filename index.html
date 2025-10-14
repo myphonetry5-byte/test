@@ -201,6 +201,22 @@
                         </ol>
                     </div>
 
+                    <!-- Troubleshooting -->
+                    <div class="bg-red-50 p-4 rounded-lg mb-4">
+                        <h4 class="font-semibold text-red-800 mb-2">🔧 Troubleshooting Error 401</h4>
+                        <div class="text-sm text-red-700 space-y-2">
+                            <p><strong>Jika muncul "HTTP 401":</strong></p>
+                            <ul class="list-disc list-inside ml-4 space-y-1">
+                                <li>Pastikan menggunakan <strong>"anon public"</strong> key, bukan service_role key</li>
+                                <li>Periksa URL project: harus format <code>https://xxx.supabase.co</code></li>
+                                <li>Jangan gunakan key yang diawali dengan <code>service_role</code></li>
+                                <li>Key yang benar biasanya diawali dengan <code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9</code></li>
+                                <li>Coba regenerate API key di dashboard Supabase</li>
+                            </ul>
+                            <p class="mt-2"><strong>Lokasi key yang benar:</strong> Settings → API → Project API keys → <code>anon public</code></p>
+                        </div>
+                    </div>
+
                     <!-- Log Aktivitas -->
                     <div class="bg-gray-50 p-4 rounded-lg">
                         <h4 class="font-semibold text-gray-800 mb-2">📝 Log Aktivitas</h4>
@@ -1445,31 +1461,53 @@
                 return;
             }
 
+            // Validate URL format
+            if (!url.includes('supabase.co') && !url.includes('localhost')) {
+                showErrorMessage('URL harus berupa URL Supabase yang valid (contoh: https://xxx.supabase.co)');
+                return;
+            }
+
             updateConnectionStatus('testing', 'Menguji koneksi...');
             logActivity('🔍 Menguji koneksi ke Supabase...');
 
             try {
-                // Test connection by making a simple request
-                const response = await fetch(`${url}/rest/v1/`, {
+                // Test connection with a simple health check
+                const testUrl = `${url}/rest/v1/`;
+                const response = await fetch(testUrl, {
                     method: 'GET',
                     headers: {
                         'apikey': key,
-                        'Authorization': `Bearer ${key}`
+                        'Authorization': `Bearer ${key}`,
+                        'Content-Type': 'application/json'
                     }
                 });
 
-                if (response.ok) {
+                if (response.ok || response.status === 200) {
                     updateConnectionStatus('connected', 'Koneksi berhasil!');
                     logActivity('✅ Koneksi berhasil! Supabase siap digunakan');
                     initializeSupabase(url, key);
                     showSuccessMessage('Koneksi ke Supabase berhasil!');
+                } else if (response.status === 401) {
+                    throw new Error('API Key tidak valid atau tidak memiliki akses. Pastikan menggunakan "anon/public" key dari Settings → API');
+                } else if (response.status === 404) {
+                    throw new Error('URL Supabase tidak ditemukan. Periksa kembali Project URL Anda');
                 } else {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
                 }
             } catch (error) {
-                updateConnectionStatus('error', 'Koneksi gagal: ' + error.message);
-                logActivity('❌ Koneksi gagal: ' + error.message);
-                showErrorMessage('Koneksi gagal: ' + error.message);
+                let errorMessage = error.message;
+                
+                // Provide more helpful error messages
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    errorMessage = 'Tidak dapat terhubung ke Supabase. Periksa koneksi internet dan URL project Anda.';
+                } else if (error.message.includes('CORS')) {
+                    errorMessage = 'Error CORS. Pastikan domain ini diizinkan di pengaturan Supabase Anda.';
+                }
+                
+                updateConnectionStatus('error', 'Koneksi gagal: ' + errorMessage);
+                logActivity('❌ Koneksi gagal: ' + errorMessage);
+                showErrorMessage('Koneksi gagal: ' + errorMessage);
             }
         }
 
@@ -2037,5 +2075,5 @@
             showSuccessMessage('PDF berhasil diexport!');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e7d75012348740',t:'MTc2MDQ1MjkyMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e7e5160375bd94',t:'MTc2MDQ1MzQ4Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
