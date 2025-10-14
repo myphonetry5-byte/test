@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Monitoring Ruangan Kantor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        .detailed-chart {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+        .detailed-chart-large {
+            position: relative;
+            height: 500px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-full">
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl font-bold">Sistem Monitoring Ruangan</h1>
+                <nav id="breadcrumb" class="text-sm opacity-90"></nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <!-- Halaman Utama -->
+        <div id="homePage" class="page">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">Dashboard Monitoring Ruangan</h2>
+                <p class="text-gray-600">Pilih ruangan untuk melihat data monitoring atau tambah ruangan baru</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" id="roomGrid">
+                <!-- Room cards akan ditambahkan di sini -->
+            </div>
+
+            <div class="text-center">
+                <button onclick="showAddRoomForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition duration-300 shadow-lg">
+                    + Tambah Ruangan Baru
+                </button>
+            </div>
+
+            <!-- Form Tambah Ruangan -->
+            <div id="addRoomForm" class="hidden mt-8 max-w-md mx-auto">
+                <div class="bg-white p-6 rounded-lg card-shadow">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Tambah Ruangan Baru</h3>
+                    <input type="text" id="roomNameInput" placeholder="Nama Ruangan" class="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <div class="flex gap-3">
+                        <button onclick="addRoom()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                            Tambah
+                        </button>
+                        <button onclick="hideAddRoomForm()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                            Batal
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Halaman Summary Ruangan -->
+        <div id="roomPage" class="page hidden">
+            <div class="mb-6">
+                <button onclick="showHomePage()" class="text-blue-600 hover:text-blue-800 font-semibold mb-4">
+                    ← Kembali ke Dashboard
+                </button>
+                <h2 id="roomTitle" class="text-3xl font-bold text-gray-800 mb-2"></h2>
+                <p class="text-gray-600">Klik pada diagram untuk mengedit data</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-lg card-shadow cursor-pointer hover:shadow-xl transition duration-300" onclick="showEditPage('temperature')">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Suhu Ruangan (°C)</h3>
+                    <div class="chart-container">
+                        <canvas id="tempChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg card-shadow cursor-pointer hover:shadow-xl transition duration-300" onclick="showEditPage('humidity')">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Kelembaban (%)</h3>
+                    <div class="chart-container">
+                        <canvas id="humidityChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg card-shadow cursor-pointer hover:shadow-xl transition duration-300" onclick="showEditPage('fridge')">
+                    <h3 class="text-lg font-semibold mb-4 text-gray-800">Suhu Kulkas (°C)</h3>
+                    <div class="chart-container">
+                        <canvas id="fridgeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Halaman Edit -->
+        <div id="editPage" class="page hidden">
+            <div class="mb-6">
+                <button onclick="showRoomPage()" class="text-blue-600 hover:text-blue-800 font-semibold mb-4">
+                    ← Kembali ke Summary
+                </button>
+                <h2 id="editTitle" class="text-3xl font-bold text-gray-800 mb-2"></h2>
+            </div>
+
+            <!-- Form Input -->
+            <div class="max-w-2xl mx-auto mb-8">
+                <div class="bg-white p-6 rounded-lg card-shadow">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800">Input Data</h3>
+                    <form onsubmit="addDataPoint(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal</label>
+                            <input type="date" id="dateInput" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Shift</label>
+                            <select id="shiftInput" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                                <option value="">Pilih Shift</option>
+                                <option value="pagi">Pagi</option>
+                                <option value="malam">Malam</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2" id="dataLabel">Nilai</label>
+                            <input type="number" id="valueInput" step="0.1" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nama Pengisi</label>
+                            <input type="text" id="operatorInput" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+                        <div class="md:col-span-2">
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-300">
+                                Tambah Data
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Diagram Detail -->
+            <div class="mb-8">
+                <div class="bg-white p-6 rounded-lg card-shadow">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800">Diagram Detail</h3>
+                    <div class="detailed-chart-large">
+                        <canvas id="detailChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabel Data -->
+            <div class="mt-8 bg-white p-6 rounded-lg card-shadow">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800">Data Tercatat</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full table-auto">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-4 py-2 text-left font-semibold text-gray-700">Tanggal</th>
+                                <th class="px-4 py-2 text-left font-semibold text-gray-700">Shift</th>
+                                <th class="px-4 py-2 text-left font-semibold text-gray-700">Nilai</th>
+                                <th class="px-4 py-2 text-left font-semibold text-gray-700">Pengisi</th>
+                                <th class="px-4 py-2 text-left font-semibold text-gray-700">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Data Storage
+        let rooms = JSON.parse(localStorage.getItem('rooms')) || [];
+        let currentRoom = null;
+        let currentDataType = null;
+        let charts = {};
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            showHomePage();
+            renderRooms();
+        });
+
+        // Navigation Functions
+        function showHomePage() {
+            hideAllPages();
+            document.getElementById('homePage').classList.remove('hidden');
+            updateBreadcrumb(['Dashboard']);
+            renderRooms();
+        }
+
+        function showRoomPage(roomId) {
+            currentRoom = rooms.find(r => r.id === roomId);
+            if (!currentRoom) return;
+
+            hideAllPages();
+            document.getElementById('roomPage').classList.remove('hidden');
+            document.getElementById('roomTitle').textContent = currentRoom.name;
+            updateBreadcrumb(['Dashboard', currentRoom.name]);
+            
+            setTimeout(() => {
+                renderSummaryCharts();
+            }, 100);
+        }
+
+        function showEditPage(dataType) {
+            currentDataType = dataType;
+            hideAllPages();
+            document.getElementById('editPage').classList.remove('hidden');
+            
+            const titles = {
+                temperature: 'Suhu Ruangan (°C)',
+                humidity: 'Kelembaban (%)',
+                fridge: 'Suhu Kulkas (°C)'
+            };
+            
+            const labels = {
+                temperature: 'Suhu (°C)',
+                humidity: 'Kelembaban (%)',
+                fridge: 'Suhu (°C)'
+            };
+
+            document.getElementById('editTitle').textContent = titles[dataType];
+            document.getElementById('dataLabel').textContent = labels[dataType];
+            updateBreadcrumb(['Dashboard', currentRoom.name, titles[dataType]]);
+            
+            setTimeout(() => {
+                renderDetailChart();
+                renderDataTable();
+            }, 100);
+        }
+
+        function hideAllPages() {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.add('hidden');
+            });
+        }
+
+        function updateBreadcrumb(items) {
+            document.getElementById('breadcrumb').textContent = items.join(' > ');
+        }
+
+        // Room Management
+        function showAddRoomForm() {
+            document.getElementById('addRoomForm').classList.remove('hidden');
+        }
+
+        function hideAddRoomForm() {
+            document.getElementById('addRoomForm').classList.add('hidden');
+            document.getElementById('roomNameInput').value = '';
+        }
+
+        function addRoom() {
+            const name = document.getElementById('roomNameInput').value.trim();
+            if (!name) return;
+
+            const room = {
+                id: Date.now().toString(),
+                name: name,
+                data: {
+                    temperature: [],
+                    humidity: [],
+                    fridge: []
+                }
+            };
+
+            rooms.push(room);
+            localStorage.setItem('rooms', JSON.stringify(rooms));
+            hideAddRoomForm();
+            renderRooms();
+        }
+
+        function renderRooms() {
+            const grid = document.getElementById('roomGrid');
+            grid.innerHTML = '';
+
+            rooms.forEach(room => {
+                const card = document.createElement('div');
+                card.className = 'bg-white p-6 rounded-lg card-shadow cursor-pointer hover:shadow-xl transition duration-300';
+                card.onclick = () => showRoomPage(room.id);
+                
+                card.innerHTML = `
+                    <h3 class="text-xl font-semibold mb-2 text-gray-800">${room.name}</h3>
+                    <p class="text-gray-600 mb-4">Klik untuk melihat monitoring</p>
+                    <div class="flex justify-between text-sm text-gray-500">
+                        <span>Suhu: ${getLatestValue(room, 'temperature')}°C</span>
+                        <span>Kelembaban: ${getLatestValue(room, 'humidity')}%</span>
+                        <span>Kulkas: ${getLatestValue(room, 'fridge')}°C</span>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+
+        function getLatestValue(room, type) {
+            const data = room.data[type];
+            return data.length > 0 ? data[data.length - 1].value : '--';
+        }
+
+        // Chart Functions
+        function renderSummaryCharts() {
+            const types = ['temperature', 'humidity', 'fridge'];
+            
+            types.forEach(type => {
+                const ctx = document.getElementById(type === 'temperature' ? 'tempChart' : 
+                                                 type === 'humidity' ? 'humidityChart' : 'fridgeChart');
+                
+                if (charts[type]) {
+                    charts[type].destroy();
+                }
+
+                const data = currentRoom.data[type] || [];
+                const last7Days = data.slice(-14); // Show last 14 data points
+
+                charts[type] = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: last7Days.map(d => `${d.date} (${d.shift})`),
+                        datasets: [{
+                            label: type === 'temperature' ? 'Suhu Ruangan' : 
+                                   type === 'humidity' ? 'Kelembaban' : 'Suhu Kulkas',
+                            data: last7Days.map(d => d.value),
+                            borderColor: type === 'temperature' ? '#ef4444' : 
+                                        type === 'humidity' ? '#3b82f6' : '#10b981',
+                            backgroundColor: type === 'temperature' ? '#fef2f2' : 
+                                           type === 'humidity' ? '#eff6ff' : '#f0fdf4',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: false
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        function renderDetailChart() {
+            const ctx = document.getElementById('detailChart');
+            
+            if (charts.detail) {
+                charts.detail.destroy();
+            }
+
+            const data = currentRoom.data[currentDataType] || [];
+            
+            // Generate all days of current month
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            // Create combined data points for ALL dates and shifts
+            const combinedLabels = [];
+            const combinedData = [];
+
+            for (let i = 1; i <= daysInMonth; i++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+                
+                // Add morning data point (always add label, null if no data)
+                const morningEntry = data.find(d => d.date === dateStr && d.shift === 'pagi');
+                combinedLabels.push(`${i}P`);
+                combinedData.push(morningEntry ? morningEntry.value : null);
+                
+                // Add evening data point (always add label, null if no data)
+                const eveningEntry = data.find(d => d.date === dateStr && d.shift === 'malam');
+                combinedLabels.push(`${i}M`);
+                combinedData.push(eveningEntry ? eveningEntry.value : null);
+            }
+
+            // Set Y-axis configuration based on data type
+            let yAxisConfig = {};
+            if (currentDataType === 'temperature') {
+                yAxisConfig = { min: 10, max: 30, stepSize: 2 };
+            } else if (currentDataType === 'humidity') {
+                yAxisConfig = { min: 30, max: 80, stepSize: 5 };
+            } else if (currentDataType === 'fridge') {
+                yAxisConfig = { min: -2, max: 22, stepSize: 1 };
+            }
+
+            charts.detail = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: combinedLabels,
+                    datasets: [{
+                        label: 'Data Monitoring',
+                        data: combinedData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: '#eff6ff',
+                        tension: 0.4,
+                        fill: false,
+                        pointBackgroundColor: '#3b82f6',
+                        pointBorderColor: '#1d4ed8',
+                        pointRadius: 4,
+                        spanGaps: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: yAxisConfig,
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tanggal dan Shift (P=Pagi, M=Malam)'
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        // Data Management
+        let editingDataId = null;
+
+        function addDataPoint(event) {
+            event.preventDefault();
+            
+            const date = document.getElementById('dateInput').value;
+            const shift = document.getElementById('shiftInput').value;
+            const value = parseFloat(document.getElementById('valueInput').value);
+            const operator = document.getElementById('operatorInput').value;
+
+            if (!date || !shift || isNaN(value) || !operator) {
+                showErrorMessage('Mohon lengkapi semua field!');
+                return;
+            }
+
+            // Initialize data array if it doesn't exist
+            if (!currentRoom.data[currentDataType]) {
+                currentRoom.data[currentDataType] = [];
+            }
+
+            // Check if entry already exists for this date and shift
+            const existingIndex = currentRoom.data[currentDataType].findIndex(
+                d => d.date === date && d.shift === shift
+            );
+
+            if (editingDataId) {
+                // Edit mode
+                const editIndex = currentRoom.data[currentDataType].findIndex(d => d.id === editingDataId);
+                if (editIndex >= 0) {
+                    currentRoom.data[currentDataType][editIndex] = {
+                        ...currentRoom.data[currentDataType][editIndex],
+                        value,
+                        operator,
+                        timestamp: new Date().toISOString()
+                    };
+                    showSuccessMessage('Data berhasil diperbarui!');
+                    cancelEdit();
+                }
+            } else {
+                // Add mode
+                if (existingIndex >= 0) {
+                    showErrorMessage('Data untuk tanggal dan shift ini sudah ada! Gunakan tombol Edit untuk mengubah.');
+                    return;
+                }
+
+                const dataPoint = {
+                    id: Date.now().toString(),
+                    date,
+                    shift,
+                    value,
+                    operator,
+                    timestamp: new Date().toISOString()
+                };
+
+                currentRoom.data[currentDataType].push(dataPoint);
+                showSuccessMessage('Data berhasil ditambahkan!');
+            }
+
+            // Sort by date and shift
+            currentRoom.data[currentDataType].sort((a, b) => {
+                if (a.date !== b.date) return a.date.localeCompare(b.date);
+                return a.shift === 'pagi' ? -1 : 1;
+            });
+
+            // Update the rooms array
+            const roomIndex = rooms.findIndex(r => r.id === currentRoom.id);
+            if (roomIndex >= 0) {
+                rooms[roomIndex] = currentRoom;
+            }
+
+            localStorage.setItem('rooms', JSON.stringify(rooms));
+            
+            // Reset form
+            document.getElementById('dateInput').value = '';
+            document.getElementById('shiftInput').value = '';
+            document.getElementById('valueInput').value = '';
+            document.getElementById('operatorInput').value = '';
+
+            renderDetailChart();
+            renderDataTable();
+        }
+
+        function editDataPoint(id) {
+            const dataPoint = currentRoom.data[currentDataType].find(d => d.id === id);
+            if (!dataPoint) return;
+
+            editingDataId = id;
+            document.getElementById('dateInput').value = dataPoint.date;
+            document.getElementById('shiftInput').value = dataPoint.shift;
+            document.getElementById('valueInput').value = dataPoint.value;
+            document.getElementById('operatorInput').value = dataPoint.operator;
+
+            // Update form button
+            const submitBtn = document.querySelector('button[type="submit"]');
+            submitBtn.textContent = 'Update Data';
+            submitBtn.className = 'w-full bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-300';
+
+            // Add cancel button
+            if (!document.getElementById('cancelEditBtn')) {
+                const cancelBtn = document.createElement('button');
+                cancelBtn.id = 'cancelEditBtn';
+                cancelBtn.type = 'button';
+                cancelBtn.onclick = cancelEdit;
+                cancelBtn.className = 'w-full mt-2 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-semibold transition duration-300';
+                cancelBtn.textContent = 'Batal Edit';
+                submitBtn.parentNode.appendChild(cancelBtn);
+            }
+
+            // Disable date and shift fields during edit
+            document.getElementById('dateInput').disabled = true;
+            document.getElementById('shiftInput').disabled = true;
+        }
+
+        function cancelEdit() {
+            editingDataId = null;
+            
+            // Reset form
+            document.getElementById('dateInput').value = '';
+            document.getElementById('shiftInput').value = '';
+            document.getElementById('valueInput').value = '';
+            document.getElementById('operatorInput').value = '';
+            
+            // Enable date and shift fields
+            document.getElementById('dateInput').disabled = false;
+            document.getElementById('shiftInput').disabled = false;
+
+            // Reset form button
+            const submitBtn = document.querySelector('button[type="submit"]');
+            submitBtn.textContent = 'Tambah Data';
+            submitBtn.className = 'w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-300';
+
+            // Remove cancel button
+            const cancelBtn = document.getElementById('cancelEditBtn');
+            if (cancelBtn) {
+                cancelBtn.remove();
+            }
+        }
+
+        function renderDataTable() {
+            const tbody = document.getElementById('dataTable');
+            tbody.innerHTML = '';
+
+            const data = currentRoom.data[currentDataType] || [];
+            
+            data.forEach(entry => {
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-4 py-2">${entry.date}</td>
+                    <td class="px-4 py-2 capitalize">${entry.shift}</td>
+                    <td class="px-4 py-2">${entry.value}</td>
+                    <td class="px-4 py-2">${entry.operator}</td>
+                    <td class="px-4 py-2">
+                        <button onclick="editDataPoint('${entry.id}')" class="text-blue-600 hover:text-blue-800 text-sm font-medium mr-3">
+                            Edit
+                        </button>
+                        <button onclick="deleteDataPoint('${entry.id}')" class="text-red-600 hover:text-red-800 text-sm font-medium">
+                            Hapus
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function deleteDataPoint(id) {
+            const index = currentRoom.data[currentDataType].findIndex(d => d.id === id);
+            if (index >= 0) {
+                currentRoom.data[currentDataType].splice(index, 1);
+                
+                // Update the rooms array
+                const roomIndex = rooms.findIndex(r => r.id === currentRoom.id);
+                if (roomIndex >= 0) {
+                    rooms[roomIndex] = currentRoom;
+                }
+                
+                localStorage.setItem('rooms', JSON.stringify(rooms));
+                renderDetailChart();
+                renderDataTable();
+                showSuccessMessage('Data berhasil dihapus!');
+            }
+        }
+
+        function showSuccessMessage(message) {
+            // Create success message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
+            messageDiv.textContent = message;
+            
+            document.body.appendChild(messageDiv);
+            
+            // Remove message after 3 seconds
+            setTimeout(() => {
+                messageDiv.style.opacity = '0';
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        function showErrorMessage(message) {
+            // Create error message element
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300';
+            messageDiv.textContent = message;
+            
+            document.body.appendChild(messageDiv);
+            
+            // Remove message after 4 seconds
+            setTimeout(() => {
+                messageDiv.style.opacity = '0';
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 300);
+            }, 4000);
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e6df9c671cbd94',t:'MTc2MDQ0Mjc3Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
