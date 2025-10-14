@@ -885,7 +885,9 @@
             if (!currentRoom || !currentDataType) return;
 
             const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF('p', 'mm', 'a4');
+            // F4 size: 210 x 330 mm
+            // Start with landscape for page 1
+            const pdf = new jsPDF('l', 'mm', [210, 330]);
             
             // Get current data
             const data = currentRoom.data[currentDataType] || [];
@@ -920,36 +922,36 @@
                 </svg>
             `;
 
-            // Page 1: Header and Chart
+            // Page 1: Header and Chart (Landscape F4)
             // Add header
             pdf.setFontSize(16);
             pdf.setFont(undefined, 'bold');
             
-            // Logo placeholders (you can replace with actual logo images)
+            // Logo placeholders - adjusted for landscape F4 (330mm width)
             pdf.setFillColor(37, 99, 235);
-            pdf.rect(160, 10, 15, 15, 'F');
+            pdf.rect(300, 10, 20, 20, 'F');
             pdf.setTextColor(255, 255, 255);
-            pdf.setFontSize(8);
-            pdf.text('LOGO1', 167.5, 18.5, { align: 'center' });
+            pdf.setFontSize(10);
+            pdf.text('LOGO1', 310, 22, { align: 'center' });
             
             pdf.setFillColor(5, 150, 105);
-            pdf.rect(35, 10, 15, 15, 'F');
+            pdf.rect(10, 10, 20, 20, 'F');
             pdf.setTextColor(255, 255, 255);
-            pdf.text('LOGO2', 42.5, 18.5, { align: 'center' });
+            pdf.text('LOGO2', 20, 22, { align: 'center' });
 
-            // Main title
+            // Main title - centered for landscape
             pdf.setTextColor(0, 0, 0);
+            pdf.setFontSize(16);
+            pdf.text(`LEMBAR PEMANTAUAN ${dataTypeNames[currentDataType]}`, 165, 20, { align: 'center' });
             pdf.setFontSize(14);
-            pdf.text(`LEMBAR PEMANTAUAN ${dataTypeNames[currentDataType]}`, 105, 20, { align: 'center' });
-            pdf.setFontSize(12);
-            pdf.text('RUMAH SAKIT', 105, 27, { align: 'center' });
+            pdf.text('RUMAH SAKIT', 165, 28, { align: 'center' });
 
             // Room name, month, year
-            pdf.setFontSize(11);
-            pdf.text(`Ruangan: ${currentRoom.name}`, 105, 37, { align: 'center' });
-            pdf.text(`Periode: ${monthNames[currentViewMonth]} ${currentViewYear}`, 105, 44, { align: 'center' });
+            pdf.setFontSize(12);
+            pdf.text(`Ruangan: ${currentRoom.name}`, 165, 40, { align: 'center' });
+            pdf.text(`Periode: ${monthNames[currentViewMonth]} ${currentViewYear}`, 165, 48, { align: 'center' });
 
-            // Capture chart
+            // Capture chart - larger for landscape
             const chartCanvas = document.getElementById('detailChart');
             const chartImage = await html2canvas(chartCanvas, {
                 backgroundColor: 'white',
@@ -957,116 +959,119 @@
             });
             
             const chartImgData = chartImage.toDataURL('image/png');
-            pdf.addImage(chartImgData, 'PNG', 20, 55, 170, 120);
+            pdf.addImage(chartImgData, 'PNG', 20, 60, 290, 120);
 
-            // Add legend for chart colors
-            pdf.setFontSize(10);
-            pdf.text('Keterangan:', 20, 185);
+            // Add legend for chart colors - positioned at bottom
+            pdf.setFontSize(11);
+            pdf.text('Keterangan:', 20, 190);
             
             // Green dot for normal
             pdf.setFillColor(34, 197, 94);
-            pdf.circle(25, 192, 2, 'F');
+            pdf.circle(30, 197, 3, 'F');
             pdf.setTextColor(0, 0, 0);
-            pdf.text('Normal', 30, 194);
+            pdf.text('Normal', 38, 200);
             
             // Red dot for abnormal
             pdf.setFillColor(239, 68, 68);
-            pdf.circle(60, 192, 2, 'F');
-            pdf.text('Di luar rentang normal', 65, 194);
+            pdf.circle(90, 197, 3, 'F');
+            pdf.text('Di luar rentang normal', 98, 200);
             
             // Gray dot for no data
             pdf.setFillColor(107, 114, 128);
-            pdf.circle(130, 192, 2, 'F');
-            pdf.text('Tidak ada data', 135, 194);
+            pdf.circle(220, 197, 3, 'F');
+            pdf.text('Tidak ada data', 228, 200);
 
-            // Page 2: Data Table
-            pdf.addPage();
+            // Page 2: Data Table (Portrait F4)
+            // Add new page in portrait orientation
+            pdf.addPage([210, 330], 'p');
             
-            // Add header again
+            // Add header again - adjusted for portrait F4
             pdf.setFontSize(16);
             pdf.setFont(undefined, 'bold');
             
-            // Logo placeholders
+            // Logo placeholders - back to portrait positioning
             pdf.setFillColor(37, 99, 235);
-            pdf.rect(160, 10, 15, 15, 'F');
+            pdf.rect(175, 10, 20, 20, 'F');
             pdf.setTextColor(255, 255, 255);
-            pdf.setFontSize(8);
-            pdf.text('LOGO1', 167.5, 18.5, { align: 'center' });
+            pdf.setFontSize(10);
+            pdf.text('LOGO1', 185, 22, { align: 'center' });
             
             pdf.setFillColor(5, 150, 105);
-            pdf.rect(35, 10, 15, 15, 'F');
+            pdf.rect(15, 10, 20, 20, 'F');
             pdf.setTextColor(255, 255, 255);
-            pdf.text('LOGO2', 42.5, 18.5, { align: 'center' });
+            pdf.text('LOGO2', 25, 22, { align: 'center' });
 
-            // Main title
+            // Main title - centered for portrait F4
             pdf.setTextColor(0, 0, 0);
-            pdf.setFontSize(14);
+            pdf.setFontSize(16);
             pdf.text(`LEMBAR PEMANTAUAN ${dataTypeNames[currentDataType]}`, 105, 20, { align: 'center' });
-            pdf.setFontSize(12);
-            pdf.text('RUMAH SAKIT', 105, 27, { align: 'center' });
+            pdf.setFontSize(14);
+            pdf.text('RUMAH SAKIT', 105, 28, { align: 'center' });
 
             // Room name, month, year
-            pdf.setFontSize(11);
-            pdf.text(`Ruangan: ${currentRoom.name}`, 105, 37, { align: 'center' });
-            pdf.text(`Periode: ${monthNames[currentViewMonth]} ${currentViewYear}`, 105, 44, { align: 'center' });
-
-            // Data table
             pdf.setFontSize(12);
-            pdf.setFont(undefined, 'bold');
-            pdf.text('DATA TERCATAT', 105, 55, { align: 'center' });
+            pdf.text(`Ruangan: ${currentRoom.name}`, 105, 40, { align: 'center' });
+            pdf.text(`Periode: ${monthNames[currentViewMonth]} ${currentViewYear}`, 105, 48, { align: 'center' });
 
-            // Table headers
-            pdf.setFontSize(10);
+            // Data table - adjusted for F4 portrait
+            pdf.setFontSize(14);
             pdf.setFont(undefined, 'bold');
-            const startY = 65;
-            const rowHeight = 8;
+            pdf.text('DATA TERCATAT', 105, 60, { align: 'center' });
+
+            // Table headers - wider for F4
+            pdf.setFontSize(11);
+            pdf.setFont(undefined, 'bold');
+            const startY = 75;
+            const rowHeight = 10;
             
-            // Draw table header
-            pdf.rect(20, startY, 170, rowHeight);
-            pdf.text('Tanggal', 25, startY + 5);
-            pdf.text('Shift', 65, startY + 5);
-            pdf.text('Nilai', 95, startY + 5);
-            pdf.text('Pengisi', 125, startY + 5);
+            // Draw table header - wider columns for F4
+            pdf.rect(15, startY, 180, rowHeight);
+            pdf.text('Tanggal', 20, startY + 6);
+            pdf.text('Shift', 70, startY + 6);
+            pdf.text('Nilai', 105, startY + 6);
+            pdf.text('Pengisi', 140, startY + 6);
 
             // Table data
             pdf.setFont(undefined, 'normal');
             let currentY = startY + rowHeight;
             
             filteredData.forEach((entry, index) => {
-                if (currentY > 270) { // Check if we need a new page
-                    pdf.addPage();
+                if (currentY > 310) { // Check if we need a new page (F4 height is 330mm)
+                    pdf.addPage([210, 330], 'p');
                     currentY = 20;
                 }
                 
                 // Alternate row colors
                 if (index % 2 === 0) {
                     pdf.setFillColor(248, 250, 252);
-                    pdf.rect(20, currentY, 170, rowHeight, 'F');
+                    pdf.rect(15, currentY, 180, rowHeight, 'F');
                 }
                 
-                pdf.rect(20, currentY, 170, rowHeight);
-                pdf.text(entry.date, 25, currentY + 5);
-                pdf.text(entry.shift.charAt(0).toUpperCase() + entry.shift.slice(1), 65, currentY + 5);
-                pdf.text(entry.value.toString(), 95, currentY + 5);
-                pdf.text(entry.operator, 125, currentY + 5);
+                pdf.rect(15, currentY, 180, rowHeight);
+                pdf.text(entry.date, 20, currentY + 6);
+                pdf.text(entry.shift.charAt(0).toUpperCase() + entry.shift.slice(1), 70, currentY + 6);
+                pdf.text(entry.value.toString(), 105, currentY + 6);
+                pdf.text(entry.operator, 140, currentY + 6);
                 
                 currentY += rowHeight;
             });
 
             // Add summary at the bottom
-            currentY += 10;
-            if (currentY > 270) {
-                pdf.addPage();
+            currentY += 15;
+            if (currentY > 310) {
+                pdf.addPage([210, 330], 'p');
                 currentY = 20;
             }
             
             pdf.setFont(undefined, 'bold');
-            pdf.text('RINGKASAN:', 20, currentY);
-            currentY += 8;
+            pdf.setFontSize(12);
+            pdf.text('RINGKASAN:', 15, currentY);
+            currentY += 10;
             
             pdf.setFont(undefined, 'normal');
-            pdf.text(`Total data tercatat: ${filteredData.length}`, 20, currentY);
-            currentY += 6;
+            pdf.setFontSize(11);
+            pdf.text(`Total data tercatat: ${filteredData.length}`, 15, currentY);
+            currentY += 8;
             
             if (filteredData.length > 0) {
                 const values = filteredData.map(d => d.value);
@@ -1074,11 +1079,11 @@
                 const maxValue = Math.max(...values);
                 const avgValue = (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
                 
-                pdf.text(`Nilai minimum: ${minValue}`, 20, currentY);
-                currentY += 6;
-                pdf.text(`Nilai maksimum: ${maxValue}`, 20, currentY);
-                currentY += 6;
-                pdf.text(`Nilai rata-rata: ${avgValue}`, 20, currentY);
+                pdf.text(`Nilai minimum: ${minValue}`, 15, currentY);
+                currentY += 8;
+                pdf.text(`Nilai maksimum: ${maxValue}`, 15, currentY);
+                currentY += 8;
+                pdf.text(`Nilai rata-rata: ${avgValue}`, 15, currentY);
             }
 
             // Save PDF
@@ -1088,5 +1093,5 @@
             showSuccessMessage('PDF berhasil diexport!');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e724899183bd94',t:'MTc2MDQ0NTYwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e72c3e3143bd94',t:'MTc2MDQ0NTkxNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
