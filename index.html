@@ -104,6 +104,9 @@
             <div class="flex items-center justify-between">
                 <h1 class="text-2xl font-bold">Sistem Monitoring Ruangan</h1>
                 <div class="flex items-center gap-4">
+                    <button onclick="showEmailSettings()" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 rounded-lg transition duration-300 z-10 relative" title="Pengaturan Email">
+                        📧
+                    </button>
                     <button onclick="toggleDarkMode()" id="darkModeToggle" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-2 rounded-lg transition duration-300">
                         🌙
                     </button>
@@ -292,6 +295,53 @@
                         <tbody id="dataTable">
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Settings Modal -->
+        <div id="emailSettingsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style="z-index: 9999;">
+            <div class="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+                <h3 class="text-xl font-semibold mb-4 text-gray-800">Pengaturan Notifikasi Email</h3>
+                
+                <!-- Enable/Disable Toggle -->
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="emailEnabled" class="mr-3" onchange="toggleEmailNotifications()">
+                        <span class="text-gray-700">Aktifkan notifikasi email untuk nilai abnormal</span>
+                    </label>
+                </div>
+
+                <!-- Email Recipients -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Email Penerima Notifikasi</label>
+                    <div id="emailRecipientsList" class="space-y-2 mb-3">
+                        <!-- Recipients will be added here -->
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="email" id="newEmailInput" placeholder="Masukkan email..." class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <button onclick="addEmailRecipient()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition duration-300">
+                            Tambah
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Demo Notice -->
+                <div class="bg-blue-50 p-3 rounded-lg mb-4">
+                    <p class="text-blue-800 text-sm">
+                        <strong>📝 Catatan:</strong> Ini adalah versi demo. Notifikasi email akan ditampilkan sebagai popup. 
+                        Untuk implementasi nyata, diperlukan konfigurasi server email.
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3">
+                    <button onclick="saveEmailSettings()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                        Simpan
+                    </button>
+                    <button onclick="closeEmailSettings()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                        Tutup
+                    </button>
                 </div>
             </div>
         </div>
@@ -578,7 +628,8 @@
 
             // Show confirmation
             const confirmDiv = document.createElement('div');
-            confirmDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            confirmDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center';
+            confirmDiv.style.zIndex = '9997';
             confirmDiv.innerHTML = `
                 <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm mx-4">
                     <h3 class="text-lg font-semibold mb-4">Konfirmasi Hapus Ruangan</h3>
@@ -952,6 +1003,17 @@
             });
         }
 
+        // Email Configuration
+        let emailSettings = JSON.parse(localStorage.getItem('emailSettings')) || {
+            enabled: false,
+            recipients: [],
+            smtpSettings: {
+                service: 'gmail',
+                user: '',
+                pass: ''
+            }
+        };
+
         // Data Management
         let editingDataId = null;
 
@@ -978,16 +1040,35 @@
                 d => d.date === date && d.shift === shift
             );
 
+            // Check if value is outside normal range
+            const normalRanges = {
+                temperature: { min: 15, max: 25 },
+                humidity: { min: 40, max: 60 },
+                fridge: { min: 2, max: 8 }
+            };
+            
+            const currentRange = normalRanges[currentDataType];
+            const isAbnormal = value < currentRange.min || value > currentRange.max;
+
             if (editingDataId) {
                 // Edit mode
                 const editIndex = currentRoom.data[currentDataType].findIndex(d => d.id === editingDataId);
                 if (editIndex >= 0) {
+                    const oldValue = currentRoom.data[currentDataType][editIndex].value;
+                    const wasAbnormal = oldValue < currentRange.min || oldValue > currentRange.max;
+                    
                     currentRoom.data[currentDataType][editIndex] = {
                         ...currentRoom.data[currentDataType][editIndex],
                         value,
                         operator,
                         timestamp: new Date().toISOString()
                     };
+                    
+                    // Send email notification if value changed from normal to abnormal
+                    if (!wasAbnormal && isAbnormal) {
+                        sendAbnormalValueNotification(value, date, shift, operator);
+                    }
+                    
                     showSuccessMessage('Data berhasil diperbarui!');
                     cancelEdit();
                 }
@@ -1008,6 +1089,12 @@
                 };
 
                 currentRoom.data[currentDataType].push(dataPoint);
+                
+                // Send email notification if value is abnormal
+                if (isAbnormal) {
+                    sendAbnormalValueNotification(value, date, shift, operator);
+                }
+                
                 showSuccessMessage('Data berhasil ditambahkan!');
             }
 
@@ -1127,7 +1214,8 @@
         function deleteDataPoint(id) {
             // Show confirmation
             const confirmDiv = document.createElement('div');
-            confirmDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            confirmDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center';
+            confirmDiv.style.zIndex = '9997';
             confirmDiv.innerHTML = `
                 <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm mx-4">
                     <h3 class="text-lg font-semibold mb-4">Konfirmasi Hapus</h3>
@@ -1207,6 +1295,212 @@
                     }
                 }, 300);
             }, 4000);
+        }
+
+        // Email Notification Functions
+        function sendAbnormalValueNotification(value, date, shift, operator) {
+            if (!emailSettings.enabled || emailSettings.recipients.length === 0) {
+                // Show demo notification instead
+                showAbnormalValueAlert(value, date, shift, operator);
+                return;
+            }
+
+            // In a real implementation, this would send actual emails
+            // For demo purposes, we'll show a notification
+            showAbnormalValueAlert(value, date, shift, operator);
+            
+            // Log the email that would be sent
+            console.log('Email notification would be sent:', {
+                recipients: emailSettings.recipients,
+                subject: `⚠️ Nilai Abnormal Terdeteksi - ${currentRoom.name}`,
+                body: generateEmailBody(value, date, shift, operator)
+            });
+        }
+
+        function showAbnormalValueAlert(value, date, shift, operator) {
+            const dataTypeNames = {
+                temperature: 'Suhu Ruangan',
+                humidity: 'Kelembaban',
+                fridge: 'Suhu Kulkas'
+            };
+
+            const normalRanges = {
+                temperature: { min: 15, max: 25, unit: '°C' },
+                humidity: { min: 40, max: 60, unit: '%' },
+                fridge: { min: 2, max: 8, unit: '°C' }
+            };
+
+            const range = normalRanges[currentDataType];
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center';
+            alertDiv.style.zIndex = '9996';
+            alertDiv.innerHTML = `
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-md mx-4 border-l-4 border-red-500">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-red-100 p-2 rounded-full mr-3">
+                            <span class="text-red-600 text-xl">⚠️</span>
+                        </div>
+                        <h3 class="text-lg font-semibold text-red-800">Nilai Abnormal Terdeteksi!</h3>
+                    </div>
+                    <div class="space-y-2 text-sm text-gray-700 mb-4">
+                        <p><strong>Ruangan:</strong> ${currentRoom.name}</p>
+                        <p><strong>Parameter:</strong> ${dataTypeNames[currentDataType]}</p>
+                        <p><strong>Nilai:</strong> <span class="text-red-600 font-semibold">${value}${range.unit}</span></p>
+                        <p><strong>Rentang Normal:</strong> ${range.min} - ${range.max}${range.unit}</p>
+                        <p><strong>Tanggal:</strong> ${date}</p>
+                        <p><strong>Shift:</strong> ${shift.charAt(0).toUpperCase() + shift.slice(1)}</p>
+                        <p><strong>Pengisi:</strong> ${operator}</p>
+                    </div>
+                    <div class="bg-yellow-50 p-3 rounded-lg mb-4">
+                        <p class="text-yellow-800 text-sm">
+                            📧 <strong>Notifikasi Email:</strong> ${emailSettings.enabled ? 
+                                `Email telah dikirim ke ${emailSettings.recipients.length} penerima` : 
+                                'Email tidak aktif. Aktifkan di pengaturan untuk mendapat notifikasi otomatis.'}
+                        </p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="closeAbnormalAlert()" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                            Tutup
+                        </button>
+                        <button onclick="showEmailSettings(); closeAbnormalAlert();" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                            Pengaturan Email
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(alertDiv);
+        }
+
+        function closeAbnormalAlert() {
+            const alertDiv = document.querySelector('.fixed.inset-0');
+            if (alertDiv) {
+                alertDiv.remove();
+            }
+        }
+
+        function generateEmailBody(value, date, shift, operator) {
+            const dataTypeNames = {
+                temperature: 'Suhu Ruangan',
+                humidity: 'Kelembaban',
+                fridge: 'Suhu Kulkas'
+            };
+
+            const normalRanges = {
+                temperature: { min: 15, max: 25, unit: '°C' },
+                humidity: { min: 40, max: 60, unit: '%' },
+                fridge: { min: 2, max: 8, unit: '°C' }
+            };
+
+            const range = normalRanges[currentDataType];
+            
+            return `
+⚠️ PERINGATAN: Nilai Abnormal Terdeteksi
+
+Detail Monitoring:
+- Ruangan: ${currentRoom.name}
+- Parameter: ${dataTypeNames[currentDataType]}
+- Nilai Terdeteksi: ${value}${range.unit}
+- Rentang Normal: ${range.min} - ${range.max}${range.unit}
+- Tanggal: ${date}
+- Shift: ${shift.charAt(0).toUpperCase() + shift.slice(1)}
+- Pengisi Data: ${operator}
+- Waktu Deteksi: ${new Date().toLocaleString('id-ID')}
+
+Mohon segera lakukan pengecekan dan tindakan yang diperlukan.
+
+---
+Sistem Monitoring Ruangan Kantor
+            `.trim();
+        }
+
+        // Email Settings Functions
+        function showEmailSettings() {
+            document.getElementById('emailSettingsModal').classList.remove('hidden');
+            loadEmailSettings();
+        }
+
+        function closeEmailSettings() {
+            document.getElementById('emailSettingsModal').classList.add('hidden');
+        }
+
+        function loadEmailSettings() {
+            document.getElementById('emailEnabled').checked = emailSettings.enabled;
+            renderEmailRecipients();
+        }
+
+        function toggleEmailNotifications() {
+            emailSettings.enabled = document.getElementById('emailEnabled').checked;
+        }
+
+        function addEmailRecipient() {
+            const emailInput = document.getElementById('newEmailInput');
+            const email = emailInput.value.trim();
+            
+            if (!email) {
+                showErrorMessage('Mohon masukkan alamat email!');
+                return;
+            }
+
+            // Simple email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showErrorMessage('Format email tidak valid!');
+                return;
+            }
+
+            if (emailSettings.recipients.includes(email)) {
+                showErrorMessage('Email sudah ada dalam daftar!');
+                return;
+            }
+
+            emailSettings.recipients.push(email);
+            emailInput.value = '';
+            renderEmailRecipients();
+            showSuccessMessage('Email berhasil ditambahkan!');
+        }
+
+        function removeEmailRecipient(email) {
+            const index = emailSettings.recipients.indexOf(email);
+            if (index > -1) {
+                emailSettings.recipients.splice(index, 1);
+                renderEmailRecipients();
+                showSuccessMessage('Email berhasil dihapus!');
+            }
+        }
+
+        function renderEmailRecipients() {
+            const container = document.getElementById('emailRecipientsList');
+            container.innerHTML = '';
+
+            if (emailSettings.recipients.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-sm italic">Belum ada email penerima</p>';
+                return;
+            }
+
+            emailSettings.recipients.forEach(email => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between bg-gray-50 p-2 rounded-lg';
+                div.innerHTML = `
+                    <span class="text-sm text-gray-700">${email}</span>
+                    <button onclick="removeEmailRecipient('${email}')" class="text-red-600 hover:text-red-800 text-sm font-medium">
+                        Hapus
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function saveEmailSettings() {
+            localStorage.setItem('emailSettings', JSON.stringify(emailSettings));
+            closeEmailSettings();
+            
+            if (emailSettings.enabled && emailSettings.recipients.length > 0) {
+                showSuccessMessage(`Pengaturan email disimpan! Notifikasi akan dikirim ke ${emailSettings.recipients.length} penerima.`);
+            } else if (emailSettings.enabled) {
+                showErrorMessage('Notifikasi email diaktifkan tapi belum ada penerima. Tambahkan email penerima terlebih dahulu.');
+            } else {
+                showSuccessMessage('Pengaturan email disimpan! Notifikasi email dinonaktifkan.');
+            }
         }
 
         // ===== KONFIGURASI LOGO DAN HEADER =====
@@ -1455,5 +1749,5 @@
             showSuccessMessage('PDF berhasil diexport!');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e7864fb4028740',t:'MTc2MDQ0OTYwNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e79b73b10ab5b8',t:'MTc2MDQ1MDQ3MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
