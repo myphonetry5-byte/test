@@ -6,6 +6,8 @@
     <title>Sistem Monitoring Ruangan Kantor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body {
             box-sizing: border-box;
@@ -117,7 +119,7 @@
         <!-- Halaman Edit -->
         <div id="editPage" class="page hidden">
             <div class="mb-6">
-                <button onclick="showRoomPage()" class="text-blue-600 hover:text-blue-800 font-semibold mb-4">
+                <button onclick="showRoomPageFromEdit()" class="text-blue-600 hover:text-blue-800 font-semibold mb-4">
                     ← Kembali ke Summary
                 </button>
                 <h2 id="editTitle" class="text-3xl font-bold text-gray-800 mb-2"></h2>
@@ -154,6 +156,26 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- Month Navigation -->
+            <div class="max-w-2xl mx-auto mb-6">
+                <div class="bg-white p-4 rounded-lg card-shadow">
+                    <div class="flex items-center justify-between">
+                        <button onclick="changeMonth(-1)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition duration-300">
+                            ← Bulan Sebelumnya
+                        </button>
+                        <h3 id="currentMonthDisplay" class="text-lg font-semibold text-gray-800"></h3>
+                        <button onclick="changeMonth(1)" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition duration-300">
+                            Bulan Berikutnya →
+                        </button>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <button onclick="exportToPDF()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition duration-300">
+                            📄 Export PDF
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -195,6 +217,8 @@
         let currentRoom = null;
         let currentDataType = null;
         let charts = {};
+        let currentViewMonth = new Date().getMonth();
+        let currentViewYear = new Date().getFullYear();
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
@@ -225,6 +249,8 @@
         }
 
         function showEditPage(dataType) {
+            if (!currentRoom) return;
+            
             currentDataType = dataType;
             hideAllPages();
             document.getElementById('editPage').classList.remove('hidden');
@@ -246,6 +272,10 @@
             updateBreadcrumb(['Dashboard', currentRoom.name, titles[dataType]]);
             
             setTimeout(() => {
+                // Reset to current month when entering edit page
+                currentViewMonth = new Date().getMonth();
+                currentViewYear = new Date().getFullYear();
+                updateMonthDisplay();
                 renderDetailChart();
                 renderDataTable();
             }, 100);
@@ -259,6 +289,35 @@
 
         function updateBreadcrumb(items) {
             document.getElementById('breadcrumb').textContent = items.join(' > ');
+        }
+
+        function showRoomPageFromEdit() {
+            if (!currentRoom) return;
+            showRoomPage(currentRoom.id);
+        }
+
+        // Month Navigation Functions
+        function changeMonth(direction) {
+            currentViewMonth += direction;
+            if (currentViewMonth > 11) {
+                currentViewMonth = 0;
+                currentViewYear++;
+            } else if (currentViewMonth < 0) {
+                currentViewMonth = 11;
+                currentViewYear--;
+            }
+            updateMonthDisplay();
+            renderDetailChart();
+            renderDataTable();
+        }
+
+        function updateMonthDisplay() {
+            const monthNames = [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
+            document.getElementById('currentMonthDisplay').textContent = 
+                `${monthNames[currentViewMonth]} ${currentViewYear}`;
         }
 
         // Room Management
@@ -377,15 +436,24 @@
 
             const data = currentRoom.data[currentDataType] || [];
             
-            // Generate all days of current month
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth();
+            // Define normal ranges
+            const normalRanges = {
+                temperature: { min: 15, max: 25 },
+                humidity: { min: 40, max: 60 },
+                fridge: { min: 2, max: 8 }
+            };
+            
+            const currentRange = normalRanges[currentDataType];
+            
+            // Generate all days of selected month
+            const year = currentViewYear;
+            const month = currentViewMonth;
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             
             // Create combined data points for ALL dates and shifts
             const combinedLabels = [];
             const combinedData = [];
+            const pointColors = [];
 
             for (let i = 1; i <= daysInMonth; i++) {
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
@@ -393,12 +461,28 @@
                 // Add morning data point (always add label, null if no data)
                 const morningEntry = data.find(d => d.date === dateStr && d.shift === 'pagi');
                 combinedLabels.push(`${i}P`);
-                combinedData.push(morningEntry ? morningEntry.value : null);
+                if (morningEntry) {
+                    combinedData.push(morningEntry.value);
+                    // Check if value is within normal range
+                    const isNormal = morningEntry.value >= currentRange.min && morningEntry.value <= currentRange.max;
+                    pointColors.push(isNormal ? '#22c55e' : '#ef4444'); // Green for normal, red for abnormal
+                } else {
+                    combinedData.push(null);
+                    pointColors.push('#6b7280'); // Gray for no data
+                }
                 
                 // Add evening data point (always add label, null if no data)
                 const eveningEntry = data.find(d => d.date === dateStr && d.shift === 'malam');
                 combinedLabels.push(`${i}M`);
-                combinedData.push(eveningEntry ? eveningEntry.value : null);
+                if (eveningEntry) {
+                    combinedData.push(eveningEntry.value);
+                    // Check if value is within normal range
+                    const isNormal = eveningEntry.value >= currentRange.min && eveningEntry.value <= currentRange.max;
+                    pointColors.push(isNormal ? '#22c55e' : '#ef4444'); // Green for normal, red for abnormal
+                } else {
+                    combinedData.push(null);
+                    pointColors.push('#6b7280'); // Gray for no data
+                }
             }
 
             // Set Y-axis configuration based on data type
@@ -408,25 +492,65 @@
             } else if (currentDataType === 'humidity') {
                 yAxisConfig = { min: 30, max: 80, stepSize: 5 };
             } else if (currentDataType === 'fridge') {
-                yAxisConfig = { min: -2, max: 22, stepSize: 1 };
+                yAxisConfig = { 
+                    min: -2, 
+                    max: 13, 
+                    ticks: {
+                        stepSize: 1
+                    }
+                };
             }
+
+            // Create datasets with normal range bands
+            const datasets = [
+                // Normal range background
+                {
+                    label: 'Rentang Normal',
+                    data: combinedLabels.map(() => currentRange.max),
+                    borderColor: 'rgba(34, 197, 94, 0.3)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    fill: '+1',
+                    tension: 0,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    borderWidth: 1,
+                    order: 3
+                },
+                {
+                    label: '',
+                    data: combinedLabels.map(() => currentRange.min),
+                    borderColor: 'rgba(34, 197, 94, 0.3)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    fill: false,
+                    tension: 0,
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    borderWidth: 1,
+                    order: 3
+                },
+                // Main data line
+                {
+                    label: 'Data Monitoring',
+                    data: combinedData,
+                    borderColor: '#000000', // Black line
+                    backgroundColor: 'transparent',
+                    tension: 0.4,
+                    fill: false,
+                    pointBackgroundColor: pointColors,
+                    pointBorderColor: pointColors,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    spanGaps: true,
+                    borderWidth: 2,
+                    order: 1
+                }
+            ];
 
             charts.detail = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: combinedLabels,
-                    datasets: [{
-                        label: 'Data Monitoring',
-                        data: combinedData,
-                        borderColor: '#3b82f6',
-                        backgroundColor: '#eff6ff',
-                        tension: 0.4,
-                        fill: false,
-                        pointBackgroundColor: '#3b82f6',
-                        pointBorderColor: '#1d4ed8',
-                        pointRadius: 4,
-                        spanGaps: true
-                    }]
+                    datasets: datasets
                 },
                 options: {
                     responsive: true,
@@ -449,7 +573,46 @@
                     },
                     plugins: {
                         legend: {
-                            display: true
+                            display: true,
+                            labels: {
+                                filter: function(item, chart) {
+                                    // Only show legend for main data and normal range
+                                    return item.text !== '';
+                                }
+                            }
+                        },
+                        tooltip: {
+                            filter: function(tooltipItem) {
+                                // Only show tooltip for main data line (dataset index 2)
+                                return tooltipItem.datasetIndex === 2;
+                            },
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    if (context.datasetIndex === 2 && context.parsed.y !== null) { // Main data line
+                                        const value = context.parsed.y;
+                                        const isNormal = value >= currentRange.min && value <= currentRange.max;
+                                        
+                                        // Find the corresponding data entry to get operator name
+                                        const labelIndex = context.dataIndex;
+                                        const dayNumber = Math.floor(labelIndex / 2) + 1;
+                                        const isEvening = labelIndex % 2 === 1;
+                                        const shift = isEvening ? 'malam' : 'pagi';
+                                        
+                                        const dateStr = `${currentViewYear}-${String(currentViewMonth + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
+                                        const dataEntry = data.find(d => d.date === dateStr && d.shift === shift);
+                                        
+                                        let result = [];
+                                        if (dataEntry && dataEntry.operator) {
+                                            result.push(`Pengisi: ${dataEntry.operator}`);
+                                        }
+                                        result.push(isNormal ? 'Status: Normal ✓' : 'Status: Di luar rentang normal ⚠️');
+                                        result.push(`Rentang Normal: ${currentRange.min} - ${currentRange.max}`);
+                                        
+                                        return result;
+                                    }
+                                    return '';
+                                }
+                            }
                         }
                     },
                     interaction: {
@@ -605,7 +768,13 @@
 
             const data = currentRoom.data[currentDataType] || [];
             
-            data.forEach(entry => {
+            // Filter data for selected month and year
+            const filteredData = data.filter(entry => {
+                const entryDate = new Date(entry.date);
+                return entryDate.getMonth() === currentViewMonth && entryDate.getFullYear() === currentViewYear;
+            });
+            
+            filteredData.forEach(entry => {
                 const row = document.createElement('tr');
                 row.className = 'border-b hover:bg-gray-50';
                 row.innerHTML = `
@@ -627,6 +796,27 @@
         }
 
         function deleteDataPoint(id) {
+            // Show confirmation
+            const confirmDiv = document.createElement('div');
+            confirmDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            confirmDiv.innerHTML = `
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm mx-4">
+                    <h3 class="text-lg font-semibold mb-4">Konfirmasi Hapus</h3>
+                    <p class="text-gray-600 mb-6">Apakah Anda yakin ingin menghapus data ini?</p>
+                    <div class="flex gap-3">
+                        <button onclick="confirmDelete('${id}')" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                            Hapus
+                        </button>
+                        <button onclick="cancelDelete()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                            Batal
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(confirmDiv);
+        }
+
+        function confirmDelete(id) {
             const index = currentRoom.data[currentDataType].findIndex(d => d.id === id);
             if (index >= 0) {
                 currentRoom.data[currentDataType].splice(index, 1);
@@ -641,6 +831,14 @@
                 renderDetailChart();
                 renderDataTable();
                 showSuccessMessage('Data berhasil dihapus!');
+            }
+            cancelDelete();
+        }
+
+        function cancelDelete() {
+            const confirmDiv = document.querySelector('.fixed.inset-0');
+            if (confirmDiv) {
+                confirmDiv.remove();
             }
         }
 
@@ -681,6 +879,214 @@
                 }, 300);
             }, 4000);
         }
+
+        // PDF Export Function
+        async function exportToPDF() {
+            if (!currentRoom || !currentDataType) return;
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            // Get current data
+            const data = currentRoom.data[currentDataType] || [];
+            const filteredData = data.filter(entry => {
+                const entryDate = new Date(entry.date);
+                return entryDate.getMonth() === currentViewMonth && entryDate.getFullYear() === currentViewYear;
+            });
+
+            const monthNames = [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
+
+            const dataTypeNames = {
+                temperature: 'SUHU RUANGAN',
+                humidity: 'KELEMBABAN',
+                fridge: 'SUHU KULKAS'
+            };
+
+            // Create logos (simple SVG representations)
+            const logo1 = `
+                <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="40" height="40" fill="#2563eb" rx="5"/>
+                    <text x="20" y="25" text-anchor="middle" fill="white" font-size="12" font-weight="bold">RS</text>
+                </svg>
+            `;
+
+            const logo2 = `
+                <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="20" cy="20" r="18" fill="#059669"/>
+                    <path d="M20 8 L20 32 M8 20 L32 20" stroke="white" stroke-width="3"/>
+                </svg>
+            `;
+
+            // Page 1: Header and Chart
+            // Add header
+            pdf.setFontSize(16);
+            pdf.setFont(undefined, 'bold');
+            
+            // Logo placeholders (you can replace with actual logo images)
+            pdf.setFillColor(37, 99, 235);
+            pdf.rect(160, 10, 15, 15, 'F');
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(8);
+            pdf.text('LOGO1', 167.5, 18.5, { align: 'center' });
+            
+            pdf.setFillColor(5, 150, 105);
+            pdf.rect(35, 10, 15, 15, 'F');
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('LOGO2', 42.5, 18.5, { align: 'center' });
+
+            // Main title
+            pdf.setTextColor(0, 0, 0);
+            pdf.setFontSize(14);
+            pdf.text(`LEMBAR PEMANTAUAN ${dataTypeNames[currentDataType]}`, 105, 20, { align: 'center' });
+            pdf.setFontSize(12);
+            pdf.text('RUMAH SAKIT', 105, 27, { align: 'center' });
+
+            // Room name, month, year
+            pdf.setFontSize(11);
+            pdf.text(`Ruangan: ${currentRoom.name}`, 105, 37, { align: 'center' });
+            pdf.text(`Periode: ${monthNames[currentViewMonth]} ${currentViewYear}`, 105, 44, { align: 'center' });
+
+            // Capture chart
+            const chartCanvas = document.getElementById('detailChart');
+            const chartImage = await html2canvas(chartCanvas, {
+                backgroundColor: 'white',
+                scale: 2
+            });
+            
+            const chartImgData = chartImage.toDataURL('image/png');
+            pdf.addImage(chartImgData, 'PNG', 20, 55, 170, 120);
+
+            // Add legend for chart colors
+            pdf.setFontSize(10);
+            pdf.text('Keterangan:', 20, 185);
+            
+            // Green dot for normal
+            pdf.setFillColor(34, 197, 94);
+            pdf.circle(25, 192, 2, 'F');
+            pdf.setTextColor(0, 0, 0);
+            pdf.text('Normal', 30, 194);
+            
+            // Red dot for abnormal
+            pdf.setFillColor(239, 68, 68);
+            pdf.circle(60, 192, 2, 'F');
+            pdf.text('Di luar rentang normal', 65, 194);
+            
+            // Gray dot for no data
+            pdf.setFillColor(107, 114, 128);
+            pdf.circle(130, 192, 2, 'F');
+            pdf.text('Tidak ada data', 135, 194);
+
+            // Page 2: Data Table
+            pdf.addPage();
+            
+            // Add header again
+            pdf.setFontSize(16);
+            pdf.setFont(undefined, 'bold');
+            
+            // Logo placeholders
+            pdf.setFillColor(37, 99, 235);
+            pdf.rect(160, 10, 15, 15, 'F');
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(8);
+            pdf.text('LOGO1', 167.5, 18.5, { align: 'center' });
+            
+            pdf.setFillColor(5, 150, 105);
+            pdf.rect(35, 10, 15, 15, 'F');
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('LOGO2', 42.5, 18.5, { align: 'center' });
+
+            // Main title
+            pdf.setTextColor(0, 0, 0);
+            pdf.setFontSize(14);
+            pdf.text(`LEMBAR PEMANTAUAN ${dataTypeNames[currentDataType]}`, 105, 20, { align: 'center' });
+            pdf.setFontSize(12);
+            pdf.text('RUMAH SAKIT', 105, 27, { align: 'center' });
+
+            // Room name, month, year
+            pdf.setFontSize(11);
+            pdf.text(`Ruangan: ${currentRoom.name}`, 105, 37, { align: 'center' });
+            pdf.text(`Periode: ${monthNames[currentViewMonth]} ${currentViewYear}`, 105, 44, { align: 'center' });
+
+            // Data table
+            pdf.setFontSize(12);
+            pdf.setFont(undefined, 'bold');
+            pdf.text('DATA TERCATAT', 105, 55, { align: 'center' });
+
+            // Table headers
+            pdf.setFontSize(10);
+            pdf.setFont(undefined, 'bold');
+            const startY = 65;
+            const rowHeight = 8;
+            
+            // Draw table header
+            pdf.rect(20, startY, 170, rowHeight);
+            pdf.text('Tanggal', 25, startY + 5);
+            pdf.text('Shift', 65, startY + 5);
+            pdf.text('Nilai', 95, startY + 5);
+            pdf.text('Pengisi', 125, startY + 5);
+
+            // Table data
+            pdf.setFont(undefined, 'normal');
+            let currentY = startY + rowHeight;
+            
+            filteredData.forEach((entry, index) => {
+                if (currentY > 270) { // Check if we need a new page
+                    pdf.addPage();
+                    currentY = 20;
+                }
+                
+                // Alternate row colors
+                if (index % 2 === 0) {
+                    pdf.setFillColor(248, 250, 252);
+                    pdf.rect(20, currentY, 170, rowHeight, 'F');
+                }
+                
+                pdf.rect(20, currentY, 170, rowHeight);
+                pdf.text(entry.date, 25, currentY + 5);
+                pdf.text(entry.shift.charAt(0).toUpperCase() + entry.shift.slice(1), 65, currentY + 5);
+                pdf.text(entry.value.toString(), 95, currentY + 5);
+                pdf.text(entry.operator, 125, currentY + 5);
+                
+                currentY += rowHeight;
+            });
+
+            // Add summary at the bottom
+            currentY += 10;
+            if (currentY > 270) {
+                pdf.addPage();
+                currentY = 20;
+            }
+            
+            pdf.setFont(undefined, 'bold');
+            pdf.text('RINGKASAN:', 20, currentY);
+            currentY += 8;
+            
+            pdf.setFont(undefined, 'normal');
+            pdf.text(`Total data tercatat: ${filteredData.length}`, 20, currentY);
+            currentY += 6;
+            
+            if (filteredData.length > 0) {
+                const values = filteredData.map(d => d.value);
+                const minValue = Math.min(...values);
+                const maxValue = Math.max(...values);
+                const avgValue = (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
+                
+                pdf.text(`Nilai minimum: ${minValue}`, 20, currentY);
+                currentY += 6;
+                pdf.text(`Nilai maksimum: ${maxValue}`, 20, currentY);
+                currentY += 6;
+                pdf.text(`Nilai rata-rata: ${avgValue}`, 20, currentY);
+            }
+
+            // Save PDF
+            const fileName = `Pemantauan_${dataTypeNames[currentDataType]}_${currentRoom.name}_${monthNames[currentViewMonth]}_${currentViewYear}.pdf`;
+            pdf.save(fileName);
+            
+            showSuccessMessage('PDF berhasil diexport!');
+        }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e6df9c671cbd94',t:'MTc2MDQ0Mjc3Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e724899183bd94',t:'MTc2MDQ0NTYwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
