@@ -212,6 +212,38 @@
     </main>
 
     <script>
+        /*
+        ===== PANDUAN MENGUBAH LOGO DAN HEADER =====
+        
+        1. MENGUBAH LOGO:
+           - Cari bagian "KONFIGURASI LOGO DAN HEADER" di bawah
+           - Ganti LOGO1_URL dan LOGO2_URL dengan URL gambar Anda
+           - Format yang didukung: PNG, JPG, JPEG
+           - Ukuran yang disarankan: 200x200 pixel atau lebih
+           - Contoh: 'https://i.imgur.com/abc123.png'
+           
+        2. MENGUBAH HEADER:
+           - Ubah HEADER_CONFIG sesuai keinginan:
+             * mainTitle: Judul utama (contoh: "LEMBAR PEMANTAUAN")
+             * subTitle: Nama rumah sakit/instansi
+             * address: Alamat (opsional, bisa dikosongkan)
+           
+        3. CARA UPLOAD GAMBAR:
+           - Upload gambar ke layanan seperti Imgur, Google Drive (public), atau server Anda
+           - Pastikan URL bisa diakses publik
+           - Copy URL gambar dan paste ke LOGO1_URL atau LOGO2_URL
+           
+        4. CONTOH PENGGUNAAN:
+           const LOGO1_URL = 'https://i.imgur.com/logo1.png';
+           const LOGO2_URL = 'https://i.imgur.com/logo2.png';
+           
+           const HEADER_CONFIG = {
+               mainTitle: 'LEMBAR PEMANTAUAN',
+               subTitle: 'RS UMUM DAERAH KOTA SEHAT',
+               address: 'Jl. Kesehatan No. 123, Kota Sehat'
+           };
+        */
+
         // Data Storage
         let rooms = JSON.parse(localStorage.getItem('rooms')) || [];
         let currentRoom = null;
@@ -880,6 +912,19 @@
             }, 4000);
         }
 
+        // ===== KONFIGURASI LOGO DAN HEADER =====
+        // Ganti URL di bawah ini dengan URL gambar logo Anda
+        const LOGO1_URL = 'https://example.com/path/to/your/logo1.png'; // Ganti dengan URL logo 1 Anda
+        const LOGO2_URL = 'https://example.com/path/to/your/logo2.png'; // Ganti dengan URL logo 2 Anda
+        
+        // Ganti teks header sesuai keinginan Anda
+        const HEADER_CONFIG = {
+            mainTitle: 'LEMBAR PEMANTAUAN', // Judul utama
+            subTitle: 'RUMAH SAKIT UMUM DAERAH', // Sub judul (nama rumah sakit)
+            // Anda bisa menambahkan alamat atau info lainnya
+            address: 'Jl. Kesehatan No. 123, Kota Sehat' // Alamat (opsional)
+        };
+
         // PDF Export Function
         async function exportToPDF() {
             if (!currentRoom || !currentDataType) return;
@@ -907,49 +952,68 @@
                 fridge: 'SUHU KULKAS'
             };
 
-            // Create logos (simple SVG representations)
-            const logo1 = `
-                <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="40" height="40" fill="#2563eb" rx="5"/>
-                    <text x="20" y="25" text-anchor="middle" fill="white" font-size="12" font-weight="bold">RS</text>
-                </svg>
-            `;
+            // Function to load image and handle errors
+            async function loadImage(url) {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload = () => resolve(img);
+                    img.onerror = () => resolve(null); // Return null if image fails to load
+                    img.src = url;
+                });
+            }
 
-            const logo2 = `
-                <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="20" cy="20" r="18" fill="#059669"/>
-                    <path d="M20 8 L20 32 M8 20 L32 20" stroke="white" stroke-width="3"/>
-                </svg>
-            `;
+            // Load logos
+            const logo1Image = await loadImage(LOGO1_URL);
+            const logo2Image = await loadImage(LOGO2_URL);
 
             // Page 1: Header and Chart (Landscape F4)
-            // Add header
+            // Add header with logos and custom text
             pdf.setFontSize(16);
             pdf.setFont(undefined, 'bold');
             
-            // Logo placeholders - adjusted for landscape F4 (330mm width)
-            pdf.setFillColor(37, 99, 235);
-            pdf.rect(300, 10, 20, 20, 'F');
-            pdf.setTextColor(255, 255, 255);
-            pdf.setFontSize(10);
-            pdf.text('LOGO1', 310, 22, { align: 'center' });
+            // Add Logo 1 (kanan atas) - adjusted for landscape F4 (330mm width)
+            if (logo1Image) {
+                pdf.addImage(logo1Image, 'PNG', 300, 10, 20, 20);
+            } else {
+                // Fallback jika gambar tidak bisa dimuat
+                pdf.setFillColor(37, 99, 235);
+                pdf.rect(300, 10, 20, 20, 'F');
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFontSize(10);
+                pdf.text('LOGO1', 310, 22, { align: 'center' });
+            }
             
-            pdf.setFillColor(5, 150, 105);
-            pdf.rect(10, 10, 20, 20, 'F');
-            pdf.setTextColor(255, 255, 255);
-            pdf.text('LOGO2', 20, 22, { align: 'center' });
+            // Add Logo 2 (kiri atas)
+            if (logo2Image) {
+                pdf.addImage(logo2Image, 'PNG', 10, 10, 20, 20);
+            } else {
+                // Fallback jika gambar tidak bisa dimuat
+                pdf.setFillColor(5, 150, 105);
+                pdf.rect(10, 10, 20, 20, 'F');
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFontSize(10);
+                pdf.text('LOGO2', 20, 22, { align: 'center' });
+            }
 
-            // Main title - centered for landscape
+            // Main title - centered for landscape menggunakan konfigurasi custom
             pdf.setTextColor(0, 0, 0);
             pdf.setFontSize(16);
-            pdf.text(`LEMBAR PEMANTAUAN ${dataTypeNames[currentDataType]}`, 165, 20, { align: 'center' });
+            pdf.text(`${HEADER_CONFIG.mainTitle} ${dataTypeNames[currentDataType]}`, 165, 20, { align: 'center' });
             pdf.setFontSize(14);
-            pdf.text('RUMAH SAKIT', 165, 28, { align: 'center' });
+            pdf.text(HEADER_CONFIG.subTitle, 165, 28, { align: 'center' });
+            
+            // Tambahkan alamat jika ada
+            if (HEADER_CONFIG.address) {
+                pdf.setFontSize(10);
+                pdf.text(HEADER_CONFIG.address, 165, 35, { align: 'center' });
+            }
 
             // Room name, month, year
             pdf.setFontSize(12);
-            pdf.text(`Ruangan: ${currentRoom.name}`, 165, 40, { align: 'center' });
-            pdf.text(`Periode: ${monthNames[currentViewMonth]} ${currentViewYear}`, 165, 48, { align: 'center' });
+            const yPosition = HEADER_CONFIG.address ? 45 : 40;
+            pdf.text(`Ruangan: ${currentRoom.name}`, 165, yPosition, { align: 'center' });
+            pdf.text(`Periode: ${monthNames[currentViewMonth]} ${currentViewYear}`, 165, yPosition + 8, { align: 'center' });
 
             // Capture chart - larger for landscape
             const chartCanvas = document.getElementById('detailChart');
@@ -985,33 +1049,52 @@
             // Add new page in portrait orientation
             pdf.addPage([210, 330], 'p');
             
-            // Add header again - adjusted for portrait F4
+            // Add header again - adjusted for portrait F4 dengan logo custom
             pdf.setFontSize(16);
             pdf.setFont(undefined, 'bold');
             
-            // Logo placeholders - back to portrait positioning
-            pdf.setFillColor(37, 99, 235);
-            pdf.rect(175, 10, 20, 20, 'F');
-            pdf.setTextColor(255, 255, 255);
-            pdf.setFontSize(10);
-            pdf.text('LOGO1', 185, 22, { align: 'center' });
+            // Add Logo 1 (kanan atas) - back to portrait positioning
+            if (logo1Image) {
+                pdf.addImage(logo1Image, 'PNG', 175, 10, 20, 20);
+            } else {
+                // Fallback jika gambar tidak bisa dimuat
+                pdf.setFillColor(37, 99, 235);
+                pdf.rect(175, 10, 20, 20, 'F');
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFontSize(10);
+                pdf.text('LOGO1', 185, 22, { align: 'center' });
+            }
             
-            pdf.setFillColor(5, 150, 105);
-            pdf.rect(15, 10, 20, 20, 'F');
-            pdf.setTextColor(255, 255, 255);
-            pdf.text('LOGO2', 25, 22, { align: 'center' });
+            // Add Logo 2 (kiri atas)
+            if (logo2Image) {
+                pdf.addImage(logo2Image, 'PNG', 15, 10, 20, 20);
+            } else {
+                // Fallback jika gambar tidak bisa dimuat
+                pdf.setFillColor(5, 150, 105);
+                pdf.rect(15, 10, 20, 20, 'F');
+                pdf.setTextColor(255, 255, 255);
+                pdf.setFontSize(10);
+                pdf.text('LOGO2', 25, 22, { align: 'center' });
+            }
 
-            // Main title - centered for portrait F4
+            // Main title - centered for portrait F4 menggunakan konfigurasi custom
             pdf.setTextColor(0, 0, 0);
             pdf.setFontSize(16);
-            pdf.text(`LEMBAR PEMANTAUAN ${dataTypeNames[currentDataType]}`, 105, 20, { align: 'center' });
+            pdf.text(`${HEADER_CONFIG.mainTitle} ${dataTypeNames[currentDataType]}`, 105, 20, { align: 'center' });
             pdf.setFontSize(14);
-            pdf.text('RUMAH SAKIT', 105, 28, { align: 'center' });
+            pdf.text(HEADER_CONFIG.subTitle, 105, 28, { align: 'center' });
+            
+            // Tambahkan alamat jika ada
+            if (HEADER_CONFIG.address) {
+                pdf.setFontSize(10);
+                pdf.text(HEADER_CONFIG.address, 105, 35, { align: 'center' });
+            }
 
             // Room name, month, year
             pdf.setFontSize(12);
-            pdf.text(`Ruangan: ${currentRoom.name}`, 105, 40, { align: 'center' });
-            pdf.text(`Periode: ${monthNames[currentViewMonth]} ${currentViewYear}`, 105, 48, { align: 'center' });
+            const yPositionPage2 = HEADER_CONFIG.address ? 45 : 40;
+            pdf.text(`Ruangan: ${currentRoom.name}`, 105, yPositionPage2, { align: 'center' });
+            pdf.text(`Periode: ${monthNames[currentViewMonth]} ${currentViewYear}`, 105, yPositionPage2 + 8, { align: 'center' });
 
             // Data table - adjusted for F4 portrait
             pdf.setFontSize(14);
@@ -1093,5 +1176,5 @@
             showSuccessMessage('PDF berhasil diexport!');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e72c3e3143bd94',t:'MTc2MDQ0NTkxNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e7313594dcbd94',t:'MTc2MDQ0NjExOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
