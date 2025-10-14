@@ -199,6 +199,12 @@
                             <li>Jika berhasil, klik "Simpan Config" → "Buat Tabel"</li>
                             <li>Terakhir klik "Sinkronisasi" untuk upload data lokal</li>
                         </ol>
+                        <div class="mt-3 p-3 bg-blue-100 rounded">
+                            <p class="text-blue-800 font-medium mb-2">💡 Alternatif: Setup Manual dengan SQL</p>
+                            <button onclick="showManualSQL()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition duration-300">
+                                📝 Lihat Script SQL Manual
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Troubleshooting -->
@@ -229,6 +235,246 @@
                         <button onclick="hideSupabaseConfig()" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-6 rounded-lg font-semibold transition duration-300">
                             Tutup Panel
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal SQL Manual -->
+            <div id="sqlModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">📝 Script SQL Manual untuk Supabase</h3>
+                        <button onclick="hideManualSQL()" class="text-gray-500 hover:text-gray-700 text-2xl font-bold">×</button>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <!-- Instruksi -->
+                        <div class="bg-yellow-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-yellow-800 mb-2">📋 Cara Menggunakan:</h4>
+                            <ol class="text-sm text-yellow-700 space-y-1 list-decimal list-inside">
+                                <li>Login ke dashboard Supabase Anda</li>
+                                <li>Buka menu <strong>SQL Editor</strong> di sidebar kiri</li>
+                                <li>Klik <strong>"New Query"</strong></li>
+                                <li>Copy dan paste script SQL di bawah ini</li>
+                                <li>Klik <strong>"Run"</strong> untuk menjalankan script</li>
+                                <li>Kembali ke aplikasi ini dan lakukan "Test Koneksi"</li>
+                            </ol>
+                        </div>
+
+                        <!-- Script 1: Tabel Rooms -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-semibold text-gray-800">1️⃣ Tabel Ruangan (rooms)</h4>
+                                <button onclick="copyToClipboard('sql1')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition duration-300">
+                                    📋 Copy
+                                </button>
+                            </div>
+                            <pre id="sql1" class="bg-gray-800 text-green-400 p-4 rounded text-sm overflow-x-auto"><code>-- Tabel untuk menyimpan data ruangan
+CREATE TABLE IF NOT EXISTS rooms (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    color TEXT DEFAULT 'blue',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Index untuk performa
+CREATE INDEX IF NOT EXISTS idx_rooms_name ON rooms(name);
+
+-- Trigger untuk update timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_rooms_updated_at 
+    BEFORE UPDATE ON rooms 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();</code></pre>
+                        </div>
+
+                        <!-- Script 2: Tabel Monitoring Data -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-semibold text-gray-800">2️⃣ Tabel Data Monitoring (monitoring_data)</h4>
+                                <button onclick="copyToClipboard('sql2')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition duration-300">
+                                    📋 Copy
+                                </button>
+                            </div>
+                            <pre id="sql2" class="bg-gray-800 text-green-400 p-4 rounded text-sm overflow-x-auto"><code>-- Tabel untuk menyimpan data monitoring
+CREATE TABLE IF NOT EXISTS monitoring_data (
+    id TEXT PRIMARY KEY,
+    room_id TEXT NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
+    data_type TEXT NOT NULL CHECK (data_type IN ('temperature', 'humidity', 'fridge')),
+    date DATE NOT NULL,
+    shift TEXT NOT NULL CHECK (shift IN ('pagi', 'malam')),
+    value DECIMAL(5,2) NOT NULL,
+    operator TEXT NOT NULL,
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Constraint untuk memastikan tidak ada duplikasi data per ruangan/tanggal/shift/tipe
+    UNIQUE(room_id, data_type, date, shift)
+);
+
+-- Index untuk performa query
+CREATE INDEX IF NOT EXISTS idx_monitoring_room_id ON monitoring_data(room_id);
+CREATE INDEX IF NOT EXISTS idx_monitoring_date ON monitoring_data(date);
+CREATE INDEX IF NOT EXISTS idx_monitoring_type ON monitoring_data(data_type);
+CREATE INDEX IF NOT EXISTS idx_monitoring_composite ON monitoring_data(room_id, data_type, date);</code></pre>
+                        </div>
+
+                        <!-- Script 3: RLS Policies -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-semibold text-gray-800">3️⃣ Row Level Security (RLS) - Opsional</h4>
+                                <button onclick="copyToClipboard('sql3')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition duration-300">
+                                    📋 Copy
+                                </button>
+                            </div>
+                            <pre id="sql3" class="bg-gray-800 text-green-400 p-4 rounded text-sm overflow-x-auto"><code>-- Aktifkan Row Level Security (RLS)
+ALTER TABLE rooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE monitoring_data ENABLE ROW LEVEL SECURITY;
+
+-- Policy untuk tabel rooms - izinkan semua operasi untuk authenticated users
+CREATE POLICY "Allow all operations for authenticated users on rooms" 
+ON rooms FOR ALL 
+TO authenticated 
+USING (true) 
+WITH CHECK (true);
+
+-- Policy untuk tabel monitoring_data - izinkan semua operasi untuk authenticated users
+CREATE POLICY "Allow all operations for authenticated users on monitoring_data" 
+ON monitoring_data FOR ALL 
+TO authenticated 
+USING (true) 
+WITH CHECK (true);
+
+-- Policy untuk anonymous users (jika diperlukan)
+CREATE POLICY "Allow all operations for anonymous users on rooms" 
+ON rooms FOR ALL 
+TO anon 
+USING (true) 
+WITH CHECK (true);
+
+CREATE POLICY "Allow all operations for anonymous users on monitoring_data" 
+ON monitoring_data FOR ALL 
+TO anon 
+USING (true) 
+WITH CHECK (true);</code></pre>
+                        </div>
+
+                        <!-- Script 4: Sample Data -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-semibold text-gray-800">4️⃣ Data Contoh (Opsional)</h4>
+                                <button onclick="copyToClipboard('sql4')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition duration-300">
+                                    📋 Copy
+                                </button>
+                            </div>
+                            <pre id="sql4" class="bg-gray-800 text-green-400 p-4 rounded text-sm overflow-x-auto"><code>-- Insert contoh ruangan
+INSERT INTO rooms (id, name, color) VALUES 
+('room_001', 'Ruang ICU', 'blue'),
+('room_002', 'Ruang Operasi 1', 'green'),
+('room_003', 'Ruang Farmasi', 'purple')
+ON CONFLICT (id) DO NOTHING;
+
+-- Insert contoh data monitoring
+INSERT INTO monitoring_data (id, room_id, data_type, date, shift, value, operator) VALUES 
+('data_001', 'room_001', 'temperature', '2024-01-15', 'pagi', 22.5, 'Perawat A'),
+('data_002', 'room_001', 'temperature', '2024-01-15', 'malam', 23.0, 'Perawat B'),
+('data_003', 'room_001', 'humidity', '2024-01-15', 'pagi', 55.0, 'Perawat A'),
+('data_004', 'room_001', 'humidity', '2024-01-15', 'malam', 58.0, 'Perawat B'),
+('data_005', 'room_001', 'fridge', '2024-01-15', 'pagi', 4.5, 'Perawat A'),
+('data_006', 'room_001', 'fridge', '2024-01-15', 'malam', 5.0, 'Perawat B')
+ON CONFLICT (room_id, data_type, date, shift) DO NOTHING;</code></pre>
+                        </div>
+
+                        <!-- Script 5: Useful Queries -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-semibold text-gray-800">5️⃣ Query Berguna untuk Analisis</h4>
+                                <button onclick="copyToClipboard('sql5')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition duration-300">
+                                    📋 Copy
+                                </button>
+                            </div>
+                            <pre id="sql5" class="bg-gray-800 text-green-400 p-4 rounded text-sm overflow-x-auto"><code>-- Query untuk melihat semua data dengan nama ruangan
+SELECT 
+    r.name as room_name,
+    md.data_type,
+    md.date,
+    md.shift,
+    md.value,
+    md.operator,
+    md.timestamp
+FROM monitoring_data md
+JOIN rooms r ON md.room_id = r.id
+ORDER BY md.date DESC, r.name, md.data_type;
+
+-- Query untuk statistik per ruangan
+SELECT 
+    r.name as room_name,
+    md.data_type,
+    COUNT(*) as total_records,
+    AVG(md.value) as avg_value,
+    MIN(md.value) as min_value,
+    MAX(md.value) as max_value
+FROM monitoring_data md
+JOIN rooms r ON md.room_id = r.id
+GROUP BY r.name, md.data_type
+ORDER BY r.name, md.data_type;
+
+-- Query untuk data bulan ini
+SELECT 
+    r.name as room_name,
+    md.data_type,
+    md.date,
+    md.shift,
+    md.value,
+    md.operator
+FROM monitoring_data md
+JOIN rooms r ON md.room_id = r.id
+WHERE md.date >= DATE_TRUNC('month', CURRENT_DATE)
+ORDER BY md.date DESC, r.name;
+
+-- Query untuk deteksi nilai abnormal (contoh untuk suhu ruangan)
+SELECT 
+    r.name as room_name,
+    md.date,
+    md.shift,
+    md.value,
+    md.operator,
+    CASE 
+        WHEN md.data_type = 'temperature' AND (md.value < 15 OR md.value > 25) THEN 'ABNORMAL'
+        WHEN md.data_type = 'humidity' AND (md.value < 40 OR md.value > 60) THEN 'ABNORMAL'
+        WHEN md.data_type = 'fridge' AND (md.value < 2 OR md.value > 8) THEN 'ABNORMAL'
+        ELSE 'NORMAL'
+    END as status
+FROM monitoring_data md
+JOIN rooms r ON md.room_id = r.id
+WHERE md.data_type = 'temperature'
+ORDER BY md.date DESC;</code></pre>
+                        </div>
+
+                        <!-- Informasi Tambahan -->
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-green-800 mb-2">✅ Setelah Menjalankan Script:</h4>
+                            <ul class="text-sm text-green-700 space-y-1 list-disc list-inside">
+                                <li>Tabel <code>rooms</code> dan <code>monitoring_data</code> akan terbuat</li>
+                                <li>Index otomatis ditambahkan untuk performa optimal</li>
+                                <li>Row Level Security (RLS) diaktifkan untuk keamanan</li>
+                                <li>Constraint dan validasi data sudah terpasang</li>
+                                <li>Siap untuk sinkronisasi dengan aplikasi ini</li>
+                            </ul>
+                        </div>
+
+                        <div class="text-center">
+                            <button onclick="hideManualSQL()" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-6 rounded-lg font-semibold transition duration-300">
+                                Tutup
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1841,6 +2087,35 @@
             logDiv.scrollTop = logDiv.scrollHeight;
         }
 
+        // SQL Modal Functions
+        function showManualSQL() {
+            document.getElementById('sqlModal').classList.remove('hidden');
+        }
+
+        function hideManualSQL() {
+            document.getElementById('sqlModal').classList.add('hidden');
+        }
+
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            // Create temporary textarea
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                showSuccessMessage('Script SQL berhasil disalin ke clipboard!');
+            } catch (err) {
+                showErrorMessage('Gagal menyalin ke clipboard. Silakan copy manual.');
+            }
+            
+            document.body.removeChild(textarea);
+        }
+
         // Initialize page on load (remove duplicate)
         // This replaces the previous DOMContentLoaded listener
 
@@ -2075,5 +2350,5 @@
             showSuccessMessage('PDF berhasil diexport!');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e7e5160375bd94',t:'MTc2MDQ1MzQ4Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e7f28520a98740',t:'MTc2MDQ1NDAzNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
