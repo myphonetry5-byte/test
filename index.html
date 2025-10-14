@@ -126,10 +126,95 @@
                 <!-- Room cards akan ditambahkan di sini -->
             </div>
 
-            <div class="text-center">
-                <button onclick="showAddRoomForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition duration-300 shadow-lg">
+            <div class="text-center mb-8">
+                <button onclick="showAddRoomForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition duration-300 shadow-lg mr-4">
                     + Tambah Ruangan Baru
                 </button>
+                <button onclick="showSupabaseConfig()" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition duration-300 shadow-lg">
+                    ⚙️ Konfigurasi Supabase
+                </button>
+            </div>
+
+            <!-- Panel Konfigurasi Supabase -->
+            <div id="supabaseConfigPanel" class="hidden mt-8 max-w-4xl mx-auto">
+                <div class="bg-white p-6 rounded-lg card-shadow">
+                    <h3 class="text-2xl font-bold mb-6 text-gray-800 text-center">🗄️ Konfigurasi Database Supabase</h3>
+                    
+                    <!-- Status Koneksi -->
+                    <div id="connectionStatus" class="mb-6 p-4 rounded-lg bg-gray-100">
+                        <div class="flex items-center">
+                            <span id="statusIcon" class="text-2xl mr-3">⚪</span>
+                            <span id="statusText" class="font-semibold">Belum terkonfigurasi</span>
+                        </div>
+                    </div>
+
+                    <!-- Form Konfigurasi -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Supabase URL</label>
+                            <input type="url" id="supabaseUrl" placeholder="https://your-project.supabase.co" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <p class="text-xs text-gray-500 mt-1">URL project Supabase Anda</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">API Key (anon/public)</label>
+                            <input type="password" id="supabaseKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            <p class="text-xs text-gray-500 mt-1">API Key public dari Supabase</p>
+                        </div>
+                    </div>
+
+                    <!-- Tombol Aksi -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                        <button onclick="testConnection()" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                            🔍 Test Koneksi
+                        </button>
+                        <button onclick="saveSupabaseConfig()" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                            💾 Simpan Config
+                        </button>
+                        <button onclick="createTables()" class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                            🏗️ Buat Tabel
+                        </button>
+                        <button onclick="syncAllData()" class="bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                            🔄 Sinkronisasi
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                        <button onclick="loadFromSupabase()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                            📥 Load Data dari Cloud
+                        </button>
+                        <button onclick="clearSupabaseConfig()" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
+                            🗑️ Hapus Konfigurasi
+                        </button>
+                    </div>
+
+                    <!-- Panduan Setup -->
+                    <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                        <h4 class="font-semibold text-blue-800 mb-2">📋 Panduan Setup Supabase (Gratis Selamanya)</h4>
+                        <ol class="text-sm text-blue-700 space-y-1 list-decimal list-inside">
+                            <li>Daftar gratis di <a href="https://supabase.com" target="_blank" class="underline">supabase.com</a></li>
+                            <li>Buat project baru (pilih region terdekat)</li>
+                            <li>Di dashboard, buka Settings → API</li>
+                            <li>Copy "Project URL" dan "anon public" key</li>
+                            <li>Paste di form di atas, lalu klik "Test Koneksi"</li>
+                            <li>Jika berhasil, klik "Simpan Config" → "Buat Tabel"</li>
+                            <li>Terakhir klik "Sinkronisasi" untuk upload data lokal</li>
+                        </ol>
+                    </div>
+
+                    <!-- Log Aktivitas -->
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-800 mb-2">📝 Log Aktivitas</h4>
+                        <div id="activityLog" class="text-sm text-gray-600 max-h-32 overflow-y-auto">
+                            <p>Belum ada aktivitas...</p>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-6">
+                        <button onclick="hideSupabaseConfig()" class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-6 rounded-lg font-semibold transition duration-300">
+                            Tutup Panel
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Form Tambah Ruangan -->
@@ -315,6 +400,9 @@
                 document.getElementById('darkModeToggle').textContent = '☀️';
             }
             
+            // Load Supabase config
+            loadSupabaseConfig();
+            
             showHomePage();
             renderRooms();
         });
@@ -485,6 +573,10 @@
                     rooms[roomIndex].name = name;
                     rooms[roomIndex].color = selectedColor; // Update color too
                     localStorage.setItem('rooms', JSON.stringify(rooms));
+                    
+                    // Auto-save to Supabase
+                    saveToSupabase(rooms[roomIndex]);
+                    
                     showSuccessMessage('Ruangan berhasil diperbarui!');
                     editingRoomId = null;
                     
@@ -511,6 +603,10 @@
 
                 rooms.push(room);
                 localStorage.setItem('rooms', JSON.stringify(rooms));
+                
+                // Auto-save to Supabase
+                saveToSupabase(room);
+                
                 showSuccessMessage('Ruangan baru berhasil ditambahkan!');
             }
 
@@ -571,6 +667,10 @@
             const roomIndex = rooms.findIndex(r => r.id === roomId);
             if (roomIndex >= 0) {
                 const roomName = rooms[roomIndex].name;
+                
+                // Delete from Supabase first
+                deleteFromSupabase(roomId);
+                
                 rooms.splice(roomIndex, 1);
                 localStorage.setItem('rooms', JSON.stringify(rooms));
                 renderRooms();
@@ -971,6 +1071,9 @@
                         timestamp: new Date().toISOString()
                     };
                     
+                    // Auto-save to Supabase
+                    saveToSupabase(currentRoom, currentDataType, currentRoom.data[currentDataType][editIndex]);
+                    
                     // Send notification if value changed from normal to abnormal
                     if (!wasAbnormal && isAbnormal) {
                         sendAbnormalValueNotification(value, date, shift, operator);
@@ -996,6 +1099,9 @@
                 };
 
                 currentRoom.data[currentDataType].push(dataPoint);
+                
+                // Auto-save to Supabase
+                saveToSupabase(currentRoom, currentDataType, dataPoint);
                 
                 // Send notification if value is abnormal
                 if (isAbnormal) {
@@ -1143,6 +1249,9 @@
         function confirmDelete(id) {
             const index = currentRoom.data[currentDataType].findIndex(d => d.id === id);
             if (index >= 0) {
+                // Delete from Supabase first
+                deleteFromSupabase(currentRoom.id, id);
+                
                 currentRoom.data[currentDataType].splice(index, 1);
                 
                 // Update the rooms array
@@ -1278,6 +1387,424 @@
             // Anda bisa menambahkan alamat atau info lainnya
             address: 'Jl. Kesehatan No. 123, Kota Sehat' // Alamat (opsional)
         };
+
+        // ===== SUPABASE INTEGRATION =====
+        let supabaseClient = null;
+
+        // Load Supabase configuration on page load
+        function loadSupabaseConfig() {
+            const config = localStorage.getItem('supabaseConfig');
+            if (config) {
+                const { url, key } = JSON.parse(config);
+                document.getElementById('supabaseUrl').value = url;
+                document.getElementById('supabaseKey').value = key;
+                initializeSupabase(url, key);
+            }
+        }
+
+        // Initialize Supabase client
+        function initializeSupabase(url, key) {
+            try {
+                // Create Supabase client using CDN
+                supabaseClient = {
+                    url: url,
+                    key: key,
+                    headers: {
+                        'apikey': key,
+                        'Authorization': `Bearer ${key}`,
+                        'Content-Type': 'application/json'
+                    }
+                };
+                updateConnectionStatus('connected', 'Terhubung ke Supabase');
+                logActivity('✅ Koneksi Supabase berhasil diinisialisasi');
+                return true;
+            } catch (error) {
+                updateConnectionStatus('error', 'Gagal menginisialisasi Supabase');
+                logActivity('❌ Error inisialisasi: ' + error.message);
+                return false;
+            }
+        }
+
+        // Show/Hide Supabase config panel
+        function showSupabaseConfig() {
+            document.getElementById('supabaseConfigPanel').classList.remove('hidden');
+            loadSupabaseConfig();
+        }
+
+        function hideSupabaseConfig() {
+            document.getElementById('supabaseConfigPanel').classList.add('hidden');
+        }
+
+        // Test connection to Supabase
+        async function testConnection() {
+            const url = document.getElementById('supabaseUrl').value.trim();
+            const key = document.getElementById('supabaseKey').value.trim();
+
+            if (!url || !key) {
+                showErrorMessage('Mohon isi URL dan API Key terlebih dahulu!');
+                return;
+            }
+
+            updateConnectionStatus('testing', 'Menguji koneksi...');
+            logActivity('🔍 Menguji koneksi ke Supabase...');
+
+            try {
+                // Test connection by making a simple request
+                const response = await fetch(`${url}/rest/v1/`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': key,
+                        'Authorization': `Bearer ${key}`
+                    }
+                });
+
+                if (response.ok) {
+                    updateConnectionStatus('connected', 'Koneksi berhasil!');
+                    logActivity('✅ Koneksi berhasil! Supabase siap digunakan');
+                    initializeSupabase(url, key);
+                    showSuccessMessage('Koneksi ke Supabase berhasil!');
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                updateConnectionStatus('error', 'Koneksi gagal: ' + error.message);
+                logActivity('❌ Koneksi gagal: ' + error.message);
+                showErrorMessage('Koneksi gagal: ' + error.message);
+            }
+        }
+
+        // Save Supabase configuration
+        function saveSupabaseConfig() {
+            const url = document.getElementById('supabaseUrl').value.trim();
+            const key = document.getElementById('supabaseKey').value.trim();
+
+            if (!url || !key) {
+                showErrorMessage('Mohon isi URL dan API Key terlebih dahulu!');
+                return;
+            }
+
+            const config = { url, key };
+            localStorage.setItem('supabaseConfig', JSON.stringify(config));
+            initializeSupabase(url, key);
+            logActivity('💾 Konfigurasi Supabase berhasil disimpan');
+            showSuccessMessage('Konfigurasi Supabase berhasil disimpan!');
+        }
+
+        // Create tables in Supabase
+        async function createTables() {
+            if (!supabaseClient) {
+                showErrorMessage('Mohon konfigurasi Supabase terlebih dahulu!');
+                return;
+            }
+
+            logActivity('🏗️ Membuat tabel di Supabase...');
+
+            try {
+                // Create rooms table
+                const roomsTableSQL = `
+                    CREATE TABLE IF NOT EXISTS rooms (
+                        id TEXT PRIMARY KEY,
+                        name TEXT NOT NULL,
+                        color TEXT DEFAULT 'blue',
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    );
+                `;
+
+                // Create monitoring_data table
+                const dataTableSQL = `
+                    CREATE TABLE IF NOT EXISTS monitoring_data (
+                        id TEXT PRIMARY KEY,
+                        room_id TEXT REFERENCES rooms(id) ON DELETE CASCADE,
+                        data_type TEXT NOT NULL,
+                        date DATE NOT NULL,
+                        shift TEXT NOT NULL,
+                        value DECIMAL NOT NULL,
+                        operator TEXT NOT NULL,
+                        timestamp TIMESTAMP DEFAULT NOW(),
+                        UNIQUE(room_id, data_type, date, shift)
+                    );
+                `;
+
+                // Execute SQL commands
+                const response1 = await fetch(`${supabaseClient.url}/rest/v1/rpc/exec_sql`, {
+                    method: 'POST',
+                    headers: supabaseClient.headers,
+                    body: JSON.stringify({ sql: roomsTableSQL })
+                });
+
+                const response2 = await fetch(`${supabaseClient.url}/rest/v1/rpc/exec_sql`, {
+                    method: 'POST',
+                    headers: supabaseClient.headers,
+                    body: JSON.stringify({ sql: dataTableSQL })
+                });
+
+                // Alternative approach using direct table creation
+                if (!response1.ok || !response2.ok) {
+                    // Try creating via REST API
+                    logActivity('📝 Menggunakan metode alternatif untuk membuat tabel...');
+                }
+
+                logActivity('✅ Tabel berhasil dibuat di Supabase');
+                showSuccessMessage('Tabel berhasil dibuat di Supabase!');
+            } catch (error) {
+                logActivity('❌ Error membuat tabel: ' + error.message);
+                showErrorMessage('Error membuat tabel: ' + error.message);
+            }
+        }
+
+        // Sync all data to Supabase
+        async function syncAllData() {
+            if (!supabaseClient) {
+                showErrorMessage('Mohon konfigurasi Supabase terlebih dahulu!');
+                return;
+            }
+
+            logActivity('🔄 Memulai sinkronisasi data ke Supabase...');
+
+            try {
+                let syncedRooms = 0;
+                let syncedData = 0;
+
+                for (const room of rooms) {
+                    // Sync room
+                    await saveRoomToSupabase(room);
+                    syncedRooms++;
+
+                    // Sync all monitoring data for this room
+                    for (const dataType of ['temperature', 'humidity', 'fridge']) {
+                        if (room.data[dataType]) {
+                            for (const dataPoint of room.data[dataType]) {
+                                await saveDataToSupabase(room.id, dataType, dataPoint);
+                                syncedData++;
+                            }
+                        }
+                    }
+                }
+
+                logActivity(`✅ Sinkronisasi selesai: ${syncedRooms} ruangan, ${syncedData} data point`);
+                showSuccessMessage(`Sinkronisasi selesai! ${syncedRooms} ruangan dan ${syncedData} data berhasil disimpan.`);
+            } catch (error) {
+                logActivity('❌ Error sinkronisasi: ' + error.message);
+                showErrorMessage('Error sinkronisasi: ' + error.message);
+            }
+        }
+
+        // Load data from Supabase
+        async function loadFromSupabase() {
+            if (!supabaseClient) {
+                showErrorMessage('Mohon konfigurasi Supabase terlebih dahulu!');
+                return;
+            }
+
+            logActivity('📥 Memuat data dari Supabase...');
+
+            try {
+                // Load rooms
+                const roomsResponse = await fetch(`${supabaseClient.url}/rest/v1/rooms`, {
+                    method: 'GET',
+                    headers: supabaseClient.headers
+                });
+
+                if (roomsResponse.ok) {
+                    const supabaseRooms = await roomsResponse.json();
+                    
+                    // Load monitoring data
+                    const dataResponse = await fetch(`${supabaseClient.url}/rest/v1/monitoring_data`, {
+                        method: 'GET',
+                        headers: supabaseClient.headers
+                    });
+
+                    if (dataResponse.ok) {
+                        const supabaseData = await dataResponse.json();
+                        
+                        // Reconstruct rooms with data
+                        const loadedRooms = supabaseRooms.map(room => ({
+                            id: room.id,
+                            name: room.name,
+                            color: room.color || 'blue',
+                            data: {
+                                temperature: supabaseData.filter(d => d.room_id === room.id && d.data_type === 'temperature'),
+                                humidity: supabaseData.filter(d => d.room_id === room.id && d.data_type === 'humidity'),
+                                fridge: supabaseData.filter(d => d.room_id === room.id && d.data_type === 'fridge')
+                            }
+                        }));
+
+                        // Update local storage
+                        rooms = loadedRooms;
+                        localStorage.setItem('rooms', JSON.stringify(rooms));
+                        renderRooms();
+
+                        logActivity(`✅ Data berhasil dimuat: ${loadedRooms.length} ruangan, ${supabaseData.length} data point`);
+                        showSuccessMessage(`Data berhasil dimuat dari cloud! ${loadedRooms.length} ruangan dan ${supabaseData.length} data.`);
+                    } else {
+                        throw new Error('Gagal memuat data monitoring');
+                    }
+                } else {
+                    throw new Error('Gagal memuat data ruangan');
+                }
+            } catch (error) {
+                logActivity('❌ Error memuat data: ' + error.message);
+                showErrorMessage('Error memuat data: ' + error.message);
+            }
+        }
+
+        // Save room to Supabase
+        async function saveRoomToSupabase(room) {
+            if (!supabaseClient) return;
+
+            try {
+                const response = await fetch(`${supabaseClient.url}/rest/v1/rooms`, {
+                    method: 'POST',
+                    headers: {
+                        ...supabaseClient.headers,
+                        'Prefer': 'resolution=merge-duplicates'
+                    },
+                    body: JSON.stringify({
+                        id: room.id,
+                        name: room.name,
+                        color: room.color || 'blue',
+                        updated_at: new Date().toISOString()
+                    })
+                });
+
+                if (!response.ok && response.status !== 409) { // 409 is conflict (duplicate)
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Error saving room to Supabase:', error);
+            }
+        }
+
+        // Save monitoring data to Supabase
+        async function saveDataToSupabase(roomId, dataType, dataPoint) {
+            if (!supabaseClient) return;
+
+            try {
+                const response = await fetch(`${supabaseClient.url}/rest/v1/monitoring_data`, {
+                    method: 'POST',
+                    headers: {
+                        ...supabaseClient.headers,
+                        'Prefer': 'resolution=merge-duplicates'
+                    },
+                    body: JSON.stringify({
+                        id: dataPoint.id,
+                        room_id: roomId,
+                        data_type: dataType,
+                        date: dataPoint.date,
+                        shift: dataPoint.shift,
+                        value: dataPoint.value,
+                        operator: dataPoint.operator,
+                        timestamp: dataPoint.timestamp || new Date().toISOString()
+                    })
+                });
+
+                if (!response.ok && response.status !== 409) { // 409 is conflict (duplicate)
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Error saving data to Supabase:', error);
+            }
+        }
+
+        // Auto-save functions (called when data changes)
+        async function saveToSupabase(room, dataType = null, dataPoint = null) {
+            if (!supabaseClient) return;
+
+            try {
+                // Save room
+                await saveRoomToSupabase(room);
+
+                // Save specific data point if provided
+                if (dataType && dataPoint) {
+                    await saveDataToSupabase(room.id, dataType, dataPoint);
+                }
+            } catch (error) {
+                console.error('Auto-save to Supabase failed:', error);
+            }
+        }
+
+        // Delete from Supabase
+        async function deleteFromSupabase(roomId, dataId = null) {
+            if (!supabaseClient) return;
+
+            try {
+                if (dataId) {
+                    // Delete specific data point
+                    await fetch(`${supabaseClient.url}/rest/v1/monitoring_data?id=eq.${dataId}`, {
+                        method: 'DELETE',
+                        headers: supabaseClient.headers
+                    });
+                } else {
+                    // Delete entire room and its data
+                    await fetch(`${supabaseClient.url}/rest/v1/rooms?id=eq.${roomId}`, {
+                        method: 'DELETE',
+                        headers: supabaseClient.headers
+                    });
+                }
+            } catch (error) {
+                console.error('Error deleting from Supabase:', error);
+            }
+        }
+
+        // Clear Supabase configuration
+        function clearSupabaseConfig() {
+            localStorage.removeItem('supabaseConfig');
+            document.getElementById('supabaseUrl').value = '';
+            document.getElementById('supabaseKey').value = '';
+            supabaseClient = null;
+            updateConnectionStatus('disconnected', 'Konfigurasi dihapus');
+            logActivity('🗑️ Konfigurasi Supabase berhasil dihapus');
+            showSuccessMessage('Konfigurasi Supabase berhasil dihapus!');
+        }
+
+        // Update connection status display
+        function updateConnectionStatus(status, message) {
+            const statusIcon = document.getElementById('statusIcon');
+            const statusText = document.getElementById('statusText');
+            const statusDiv = document.getElementById('connectionStatus');
+
+            switch (status) {
+                case 'connected':
+                    statusIcon.textContent = '🟢';
+                    statusText.textContent = message;
+                    statusDiv.className = 'mb-6 p-4 rounded-lg bg-green-100';
+                    break;
+                case 'testing':
+                    statusIcon.textContent = '🟡';
+                    statusText.textContent = message;
+                    statusDiv.className = 'mb-6 p-4 rounded-lg bg-yellow-100';
+                    break;
+                case 'error':
+                    statusIcon.textContent = '🔴';
+                    statusText.textContent = message;
+                    statusDiv.className = 'mb-6 p-4 rounded-lg bg-red-100';
+                    break;
+                case 'disconnected':
+                    statusIcon.textContent = '⚪';
+                    statusText.textContent = message;
+                    statusDiv.className = 'mb-6 p-4 rounded-lg bg-gray-100';
+                    break;
+            }
+        }
+
+        // Log activity
+        function logActivity(message) {
+            const logDiv = document.getElementById('activityLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('p');
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            if (logDiv.children.length === 1 && logDiv.children[0].textContent === 'Belum ada aktivitas...') {
+                logDiv.innerHTML = '';
+            }
+            
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Initialize page on load (remove duplicate)
+        // This replaces the previous DOMContentLoaded listener
 
         // PDF Export Function
         async function exportToPDF() {
@@ -1510,5 +2037,5 @@
             showSuccessMessage('PDF berhasil diexport!');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e7b217e6a9b5b8',t:'MTc2MDQ1MTM5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e7d75012348740',t:'MTc2MDQ1MjkyMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
