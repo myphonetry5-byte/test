@@ -661,9 +661,36 @@ ORDER BY md.date DESC;</code></pre>
                         </button>
                     </div>
                     <div class="mt-4 text-center">
-                        <button type="button" onclick="showPDFConfigModal()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition duration-300">
-                            📄 Export PDF
-                        </button>
+                        <div class="relative inline-block">
+                            <button type="button" onclick="toggleExportMenu()" id="exportMenuButton" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition duration-300 flex items-center gap-2">
+                                📄 Export PDF
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="exportDropdown" class="hidden absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                                <div class="py-2">
+                                    <button onclick="showPDFConfigModal(); hideExportMenu()" class="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3 text-gray-700">
+                                        <span class="text-lg">⚙️</span>
+                                        <div>
+                                            <div class="font-medium">Konfigurasi & Export</div>
+                                            <div class="text-sm text-gray-500">Atur header rumah sakit</div>
+                                        </div>
+                                    </button>
+                                    <button onclick="exportPDFQuick(); hideExportMenu()" class="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3 text-gray-700">
+                                        <span class="text-lg">⚡</span>
+                                        <div>
+                                            <div class="font-medium">Export Cepat</div>
+                                            <div class="text-sm text-gray-500">Gunakan pengaturan tersimpan</div>
+                                        </div>
+                                    </button>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <div class="px-4 py-2 text-xs text-gray-500">
+                                        💡 Tip: Klik "Konfigurasi" untuk setup pertama kali
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2153,6 +2180,40 @@ ORDER BY md.date DESC;</code></pre>
         // Initialize page on load (remove duplicate)
         // This replaces the previous DOMContentLoaded listener
 
+        // Export Menu Functions
+        function toggleExportMenu() {
+            const dropdown = document.getElementById('exportDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        function hideExportMenu() {
+            const dropdown = document.getElementById('exportDropdown');
+            dropdown.classList.add('hidden');
+        }
+
+        // Quick export function
+        function exportPDFQuick() {
+            const savedConfig = localStorage.getItem('pdfHeaderConfig');
+            if (savedConfig) {
+                const config = JSON.parse(savedConfig);
+                exportToPDF(config);
+            } else {
+                // If no saved config, show config modal
+                showPDFConfigModal();
+                showErrorMessage('Belum ada konfigurasi tersimpan. Mohon isi konfigurasi terlebih dahulu.');
+            }
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('exportDropdown');
+            const button = document.getElementById('exportMenuButton');
+            
+            if (dropdown && button && !dropdown.contains(event.target) && !button.contains(event.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
         // PDF Export Function
         async function exportToPDF(headerConfig = null) {
             if (!currentRoom || !currentDataType) return;
@@ -2369,5 +2430,5 @@ ORDER BY md.date DESC;</code></pre>
             showSuccessMessage('PDF berhasil diexport!');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98ee55fcc2aba396',t:'MTc2MDUyMTAyNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98ee63015120a396',t:'MTc2MDUyMTU1OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
