@@ -163,15 +163,12 @@
                     </div>
 
                     <!-- Tombol Aksi -->
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
                         <button onclick="testConnection()" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
                             🔍 Test Koneksi
                         </button>
                         <button onclick="saveSupabaseConfig()" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
                             💾 Simpan Config
-                        </button>
-                        <button onclick="createTables()" class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
-                            🏗️ Buat Tabel
                         </button>
                         <button onclick="syncAllData()" class="bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded-lg font-semibold transition duration-300">
                             🔄 Sinkronisasi
@@ -196,32 +193,20 @@
                             <li>Di dashboard, buka Settings → API</li>
                             <li>Copy "Project URL" dan "anon public" key</li>
                             <li>Paste di form di atas, lalu klik "Test Koneksi"</li>
-                            <li>Jika berhasil, klik "Simpan Config" → "Buat Tabel"</li>
+                            <li>Jika berhasil, klik "Simpan Config"</li>
+                            <li>Klik "Lihat Script SQL Manual" untuk setup database</li>
+                            <li>Copy dan jalankan script SQL di SQL Editor Supabase</li>
                             <li>Terakhir klik "Sinkronisasi" untuk upload data lokal</li>
                         </ol>
                         <div class="mt-3 p-3 bg-blue-100 rounded">
-                            <p class="text-blue-800 font-medium mb-2">💡 Alternatif: Setup Manual dengan SQL</p>
+                            <p class="text-blue-800 font-medium mb-2">📝 Setup Database dengan SQL Manual</p>
                             <button onclick="showManualSQL()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition duration-300">
                                 📝 Lihat Script SQL Manual
                             </button>
                         </div>
                     </div>
 
-                    <!-- Troubleshooting -->
-                    <div class="bg-red-50 p-4 rounded-lg mb-4">
-                        <h4 class="font-semibold text-red-800 mb-2">🔧 Troubleshooting Error 401</h4>
-                        <div class="text-sm text-red-700 space-y-2">
-                            <p><strong>Jika muncul "HTTP 401":</strong></p>
-                            <ul class="list-disc list-inside ml-4 space-y-1">
-                                <li>Pastikan menggunakan <strong>"anon public"</strong> key, bukan service_role key</li>
-                                <li>Periksa URL project: harus format <code>https://xxx.supabase.co</code></li>
-                                <li>Jangan gunakan key yang diawali dengan <code>service_role</code></li>
-                                <li>Key yang benar biasanya diawali dengan <code>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9</code></li>
-                                <li>Coba regenerate API key di dashboard Supabase</li>
-                            </ul>
-                            <p class="mt-2"><strong>Lokasi key yang benar:</strong> Settings → API → Project API keys → <code>anon public</code></p>
-                        </div>
-                    </div>
+
 
                     <!-- Log Aktivitas -->
                     <div class="bg-gray-50 p-4 rounded-lg">
@@ -1774,68 +1759,7 @@ ORDER BY md.date DESC;</code></pre>
             showSuccessMessage('Konfigurasi Supabase berhasil disimpan!');
         }
 
-        // Create tables in Supabase
-        async function createTables() {
-            if (!supabaseClient) {
-                showErrorMessage('Mohon konfigurasi Supabase terlebih dahulu!');
-                return;
-            }
 
-            logActivity('🏗️ Membuat tabel di Supabase...');
-
-            try {
-                // Create rooms table
-                const roomsTableSQL = `
-                    CREATE TABLE IF NOT EXISTS rooms (
-                        id TEXT PRIMARY KEY,
-                        name TEXT NOT NULL,
-                        color TEXT DEFAULT 'blue',
-                        created_at TIMESTAMP DEFAULT NOW(),
-                        updated_at TIMESTAMP DEFAULT NOW()
-                    );
-                `;
-
-                // Create monitoring_data table
-                const dataTableSQL = `
-                    CREATE TABLE IF NOT EXISTS monitoring_data (
-                        id TEXT PRIMARY KEY,
-                        room_id TEXT REFERENCES rooms(id) ON DELETE CASCADE,
-                        data_type TEXT NOT NULL,
-                        date DATE NOT NULL,
-                        shift TEXT NOT NULL,
-                        value DECIMAL NOT NULL,
-                        operator TEXT NOT NULL,
-                        timestamp TIMESTAMP DEFAULT NOW(),
-                        UNIQUE(room_id, data_type, date, shift)
-                    );
-                `;
-
-                // Execute SQL commands
-                const response1 = await fetch(`${supabaseClient.url}/rest/v1/rpc/exec_sql`, {
-                    method: 'POST',
-                    headers: supabaseClient.headers,
-                    body: JSON.stringify({ sql: roomsTableSQL })
-                });
-
-                const response2 = await fetch(`${supabaseClient.url}/rest/v1/rpc/exec_sql`, {
-                    method: 'POST',
-                    headers: supabaseClient.headers,
-                    body: JSON.stringify({ sql: dataTableSQL })
-                });
-
-                // Alternative approach using direct table creation
-                if (!response1.ok || !response2.ok) {
-                    // Try creating via REST API
-                    logActivity('📝 Menggunakan metode alternatif untuk membuat tabel...');
-                }
-
-                logActivity('✅ Tabel berhasil dibuat di Supabase');
-                showSuccessMessage('Tabel berhasil dibuat di Supabase!');
-            } catch (error) {
-                logActivity('❌ Error membuat tabel: ' + error.message);
-                showErrorMessage('Error membuat tabel: ' + error.message);
-            }
-        }
 
         // Sync all data to Supabase
         async function syncAllData() {
@@ -2350,5 +2274,5 @@ ORDER BY md.date DESC;</code></pre>
             showSuccessMessage('PDF berhasil diexport!');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98e7f28520a98740',t:'MTc2MDQ1NDAzNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98ee30b216f54ac1',t:'MTc2MDUxOTQ5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
