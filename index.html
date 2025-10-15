@@ -660,35 +660,57 @@ ORDER BY md.date DESC;</code></pre>
                             Bulan Berikutnya →
                         </button>
                     </div>
-                    <div class="mt-4 text-center">
+                    <div class="mt-4 text-center flex gap-3 justify-center">
+                        <button onclick="exportPDFDirect()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition duration-300 flex items-center gap-2">
+                            📄 Export PDF
+                        </button>
                         <div class="relative inline-block">
-                            <button type="button" onclick="toggleExportMenu()" id="exportMenuButton" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition duration-300 flex items-center gap-2">
-                                📄 Export PDF
+                            <button type="button" onclick="toggleConfigMenu()" id="configMenuButton" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition duration-300 flex items-center gap-2">
+                                ⚙️ Konfigurasi
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
                             </button>
-                            <div id="exportDropdown" class="hidden absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
-                                <div class="py-2">
-                                    <button onclick="showPDFConfigModal(); hideExportMenu()" class="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3 text-gray-700">
-                                        <span class="text-lg">⚙️</span>
-                                        <div>
-                                            <div class="font-medium">Konfigurasi & Export</div>
-                                            <div class="text-sm text-gray-500">Atur header rumah sakit</div>
-                                        </div>
-                                    </button>
-                                    <button onclick="exportPDFQuick(); hideExportMenu()" class="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3 text-gray-700">
-                                        <span class="text-lg">⚡</span>
-                                        <div>
-                                            <div class="font-medium">Export Cepat</div>
-                                            <div class="text-sm text-gray-500">Gunakan pengaturan tersimpan</div>
-                                        </div>
-                                    </button>
-                                    <div class="border-t border-gray-100 my-1"></div>
-                                    <div class="px-4 py-2 text-xs text-gray-500">
-                                        💡 Tip: Klik "Konfigurasi" untuk setup pertama kali
+                            <div id="configDropdown" class="hidden absolute top-full right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-4">
+                                <h4 class="font-semibold text-gray-800 mb-3">⚙️ Konfigurasi Header PDF</h4>
+                                <form id="quickConfigForm" class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Rumah Sakit *</label>
+                                        <input type="text" id="quickHospitalName" placeholder="RUMAH SAKIT UMUM DAERAH" class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
                                     </div>
-                                </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Alamat</label>
+                                        <input type="text" id="quickHospitalAddress" placeholder="Jl. Kesehatan No. 123" class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Telepon</label>
+                                            <input type="tel" id="quickHospitalPhone" placeholder="(021) 123-4567" class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                            <input type="email" id="quickHospitalEmail" placeholder="info@rs.com" class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Logo Kiri URL</label>
+                                            <input type="url" id="quickLogo1Url" placeholder="https://..." class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Logo Kanan URL</label>
+                                            <input type="url" id="quickLogo2Url" placeholder="https://..." class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-2 pt-2">
+                                        <button type="button" onclick="saveQuickConfig()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded text-sm font-medium transition duration-300">
+                                            💾 Simpan
+                                        </button>
+                                        <button type="button" onclick="hideConfigMenu()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-3 rounded text-sm font-medium transition duration-300">
+                                            Batal
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -2180,34 +2202,83 @@ ORDER BY md.date DESC;</code></pre>
         // Initialize page on load (remove duplicate)
         // This replaces the previous DOMContentLoaded listener
 
-        // Export Menu Functions
-        function toggleExportMenu() {
-            const dropdown = document.getElementById('exportDropdown');
-            dropdown.classList.toggle('hidden');
-        }
-
-        function hideExportMenu() {
-            const dropdown = document.getElementById('exportDropdown');
-            dropdown.classList.add('hidden');
-        }
-
-        // Quick export function
-        function exportPDFQuick() {
+        // Export and Config Menu Functions
+        function exportPDFDirect() {
             const savedConfig = localStorage.getItem('pdfHeaderConfig');
             if (savedConfig) {
                 const config = JSON.parse(savedConfig);
                 exportToPDF(config);
             } else {
-                // If no saved config, show config modal
-                showPDFConfigModal();
-                showErrorMessage('Belum ada konfigurasi tersimpan. Mohon isi konfigurasi terlebih dahulu.');
+                // If no saved config, use default
+                const defaultConfig = {
+                    hospitalName: 'RUMAH SAKIT UMUM DAERAH',
+                    hospitalAddress: '',
+                    hospitalPhone: '',
+                    hospitalEmail: '',
+                    logo1Url: '',
+                    logo2Url: ''
+                };
+                exportToPDF(defaultConfig);
+                showErrorMessage('Menggunakan konfigurasi default. Gunakan tombol "Konfigurasi" untuk mengatur header PDF.');
             }
+        }
+
+        function toggleConfigMenu() {
+            const dropdown = document.getElementById('configDropdown');
+            
+            // Load saved configuration when opening
+            if (dropdown.classList.contains('hidden')) {
+                loadQuickConfigForm();
+            }
+            
+            dropdown.classList.toggle('hidden');
+        }
+
+        function hideConfigMenu() {
+            const dropdown = document.getElementById('configDropdown');
+            dropdown.classList.add('hidden');
+        }
+
+        function loadQuickConfigForm() {
+            const savedConfig = localStorage.getItem('pdfHeaderConfig');
+            if (savedConfig) {
+                const config = JSON.parse(savedConfig);
+                document.getElementById('quickHospitalName').value = config.hospitalName || '';
+                document.getElementById('quickHospitalAddress').value = config.hospitalAddress || '';
+                document.getElementById('quickHospitalPhone').value = config.hospitalPhone || '';
+                document.getElementById('quickHospitalEmail').value = config.hospitalEmail || '';
+                document.getElementById('quickLogo1Url').value = config.logo1Url || '';
+                document.getElementById('quickLogo2Url').value = config.logo2Url || '';
+            }
+        }
+
+        function saveQuickConfig() {
+            const hospitalName = document.getElementById('quickHospitalName').value.trim();
+            
+            if (!hospitalName) {
+                showErrorMessage('Nama rumah sakit wajib diisi!');
+                return;
+            }
+
+            const config = {
+                hospitalName: hospitalName,
+                hospitalAddress: document.getElementById('quickHospitalAddress').value.trim(),
+                hospitalPhone: document.getElementById('quickHospitalPhone').value.trim(),
+                hospitalEmail: document.getElementById('quickHospitalEmail').value.trim(),
+                logo1Url: document.getElementById('quickLogo1Url').value.trim(),
+                logo2Url: document.getElementById('quickLogo2Url').value.trim()
+            };
+
+            // Save configuration
+            localStorage.setItem('pdfHeaderConfig', JSON.stringify(config));
+            hideConfigMenu();
+            showSuccessMessage('Konfigurasi PDF berhasil disimpan!');
         }
 
         // Close dropdown when clicking outside
         document.addEventListener('click', function(event) {
-            const dropdown = document.getElementById('exportDropdown');
-            const button = document.getElementById('exportMenuButton');
+            const dropdown = document.getElementById('configDropdown');
+            const button = document.getElementById('configMenuButton');
             
             if (dropdown && button && !dropdown.contains(event.target) && !button.contains(event.target)) {
                 dropdown.classList.add('hidden');
@@ -2430,5 +2501,5 @@ ORDER BY md.date DESC;</code></pre>
             showSuccessMessage('PDF berhasil diexport!');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98ee63015120a396',t:'MTc2MDUyMTU1OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98ee76c5f707a396',t:'MTc2MDUyMjM2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
