@@ -224,6 +224,77 @@
                 </div>
             </div>
 
+            <!-- Modal PDF Configuration -->
+            <div id="pdfConfigModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800">⚙️ Konfigurasi Header PDF</h3>
+                        <button onclick="hidePDFConfigModal()" class="text-gray-500 hover:text-gray-700 text-2xl font-bold">×</button>
+                    </div>
+                    
+                    <form id="pdfConfigForm" class="space-y-4">
+                        <!-- Nama Rumah Sakit -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nama Rumah Sakit *</label>
+                            <input type="text" id="hospitalName" placeholder="RUMAH SAKIT UMUM DAERAH" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" required>
+                        </div>
+
+                        <!-- Alamat -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Alamat (Opsional)</label>
+                            <input type="text" id="hospitalAddress" placeholder="Jl. Kesehatan No. 123, Kota Sehat" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                        </div>
+
+                        <!-- Kontak -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Telepon (Opsional)</label>
+                                <input type="tel" id="hospitalPhone" placeholder="(021) 123-4567" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Email (Opsional)</label>
+                                <input type="email" id="hospitalEmail" placeholder="info@rumahsakit.com" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                            </div>
+                        </div>
+
+                        <!-- Logo URLs -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">URL Logo Kiri (Opsional)</label>
+                                <input type="url" id="logo1Url" placeholder="https://example.com/logo1.png" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <p class="text-xs text-gray-500 mt-1">Logo akan ditampilkan di kiri atas</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">URL Logo Kanan (Opsional)</label>
+                                <input type="url" id="logo2Url" placeholder="https://example.com/logo2.png" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                <p class="text-xs text-gray-500 mt-1">Logo akan ditampilkan di kanan atas</p>
+                            </div>
+                        </div>
+
+                        <!-- Preview Info -->
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="font-semibold text-blue-800 mb-2">📋 Preview Layout PDF:</h4>
+                            <div class="text-sm text-blue-700 space-y-1">
+                                <p>• Header: Logo Kiri | Nama RS + Alamat + Kontak | Logo Kanan</p>
+                                <p>• Garis pemisah horizontal</p>
+                                <p>• Judul: "LEMBAR PEMANTAUAN [JENIS DATA]" (tengah)</p>
+                                <p>• Info: "Ruangan: [Nama]" dan "Periode: [Bulan Tahun]" (kiri)</p>
+                            </div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="flex gap-3 pt-4">
+                            <button type="button" onclick="savePDFConfigAndExport()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-300">
+                                💾 Simpan & Export PDF
+                            </button>
+                            <button type="button" onclick="hidePDFConfigModal()" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-lg font-semibold transition duration-300">
+                                Batal
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- Modal SQL Manual -->
             <div id="sqlModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                 <div class="bg-white p-6 rounded-lg shadow-xl max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
@@ -590,7 +661,7 @@ ORDER BY md.date DESC;</code></pre>
                         </button>
                     </div>
                     <div class="mt-4 text-center">
-                        <button onclick="exportToPDF()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition duration-300">
+                        <button onclick="showPDFConfigModal()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition duration-300">
                             📄 Export PDF
                         </button>
                     </div>
@@ -1622,18 +1693,57 @@ ORDER BY md.date DESC;</code></pre>
             }, 4000);
         }
 
-        // ===== KONFIGURASI LOGO DAN HEADER =====
-        // Ganti URL di bawah ini dengan URL gambar logo Anda
-        const LOGO1_URL = 'https://example.com/path/to/your/logo1.png'; // Ganti dengan URL logo 1 Anda
-        const LOGO2_URL = 'https://example.com/path/to/your/logo2.png'; // Ganti dengan URL logo 2 Anda
+        // ===== PDF CONFIGURATION FUNCTIONS =====
         
-        // Ganti teks header sesuai keinginan Anda
-        const HEADER_CONFIG = {
-            mainTitle: 'LEMBAR PEMANTAUAN', // Judul utama
-            subTitle: 'RUMAH SAKIT UMUM DAERAH', // Sub judul (nama rumah sakit)
-            // Anda bisa menambahkan alamat atau info lainnya
-            address: 'Jl. Kesehatan No. 123, Kota Sehat' // Alamat (opsional)
-        };
+        // Show PDF configuration modal
+        function showPDFConfigModal() {
+            // Load saved configuration
+            const savedConfig = localStorage.getItem('pdfHeaderConfig');
+            if (savedConfig) {
+                const config = JSON.parse(savedConfig);
+                document.getElementById('hospitalName').value = config.hospitalName || '';
+                document.getElementById('hospitalAddress').value = config.hospitalAddress || '';
+                document.getElementById('hospitalPhone').value = config.hospitalPhone || '';
+                document.getElementById('hospitalEmail').value = config.hospitalEmail || '';
+                document.getElementById('logo1Url').value = config.logo1Url || '';
+                document.getElementById('logo2Url').value = config.logo2Url || '';
+            }
+            
+            document.getElementById('pdfConfigModal').classList.remove('hidden');
+        }
+
+        // Hide PDF configuration modal
+        function hidePDFConfigModal() {
+            document.getElementById('pdfConfigModal').classList.add('hidden');
+        }
+
+        // Save PDF configuration and export
+        function savePDFConfigAndExport() {
+            const hospitalName = document.getElementById('hospitalName').value.trim();
+            
+            if (!hospitalName) {
+                showErrorMessage('Nama rumah sakit wajib diisi!');
+                return;
+            }
+
+            const config = {
+                hospitalName: hospitalName,
+                hospitalAddress: document.getElementById('hospitalAddress').value.trim(),
+                hospitalPhone: document.getElementById('hospitalPhone').value.trim(),
+                hospitalEmail: document.getElementById('hospitalEmail').value.trim(),
+                logo1Url: document.getElementById('logo1Url').value.trim(),
+                logo2Url: document.getElementById('logo2Url').value.trim()
+            };
+
+            // Save configuration
+            localStorage.setItem('pdfHeaderConfig', JSON.stringify(config));
+            
+            // Hide modal and export PDF
+            hidePDFConfigModal();
+            exportToPDF(config);
+            
+            showSuccessMessage('Konfigurasi disimpan dan PDF berhasil diexport!');
+        }
 
         // ===== SUPABASE INTEGRATION =====
         let supabaseClient = null;
@@ -2044,8 +2154,22 @@ ORDER BY md.date DESC;</code></pre>
         // This replaces the previous DOMContentLoaded listener
 
         // PDF Export Function
-        async function exportToPDF() {
+        async function exportToPDF(headerConfig = null) {
             if (!currentRoom || !currentDataType) return;
+
+            // Use provided config or load from localStorage
+            let config = headerConfig;
+            if (!config) {
+                const savedConfig = localStorage.getItem('pdfHeaderConfig');
+                config = savedConfig ? JSON.parse(savedConfig) : {
+                    hospitalName: 'RUMAH SAKIT UMUM DAERAH',
+                    hospitalAddress: '',
+                    hospitalPhone: '',
+                    hospitalEmail: '',
+                    logo1Url: '',
+                    logo2Url: ''
+                };
+            }
 
             const { jsPDF } = window.jspdf;
             // F4 size: 210 x 330 mm
@@ -2072,66 +2196,84 @@ ORDER BY md.date DESC;</code></pre>
 
             // Function to load image and handle errors
             async function loadImage(url) {
+                if (!url) return null;
                 return new Promise((resolve) => {
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.onload = () => resolve(img);
-                    img.onerror = () => resolve(null); // Return null if image fails to load
+                    img.onerror = () => resolve(null);
                     img.src = url;
                 });
             }
 
             // Load logos
-            const logo1Image = await loadImage(LOGO1_URL);
-            const logo2Image = await loadImage(LOGO2_URL);
+            const logo1Image = await loadImage(config.logo1Url);
+            const logo2Image = await loadImage(config.logo2Url);
+
+            // Function to draw header for both pages
+            function drawHeader(pdf, isLandscape = true) {
+                const centerX = isLandscape ? 165 : 105;
+                const maxWidth = isLandscape ? 330 : 210;
+                
+                pdf.setTextColor(0, 0, 0);
+                pdf.setFont(undefined, 'bold');
+                
+                // Add Logo 1 (kiri atas)
+                if (logo1Image) {
+                    pdf.addImage(logo1Image, 'PNG', 15, 10, 20, 20);
+                }
+                
+                // Add Logo 2 (kanan atas)
+                if (logo2Image) {
+                    const rightX = isLandscape ? 295 : 175;
+                    pdf.addImage(logo2Image, 'PNG', rightX, 10, 20, 20);
+                }
+
+                // Hospital name - centered
+                pdf.setFontSize(14);
+                pdf.text(config.hospitalName, centerX, 18, { align: 'center' });
+                
+                let currentY = 25;
+                
+                // Address - centered if provided
+                if (config.hospitalAddress) {
+                    pdf.setFontSize(10);
+                    pdf.text(config.hospitalAddress, centerX, currentY, { align: 'center' });
+                    currentY += 6;
+                }
+                
+                // Contact info - centered if provided
+                const contactInfo = [];
+                if (config.hospitalPhone) contactInfo.push(`Tel: ${config.hospitalPhone}`);
+                if (config.hospitalEmail) contactInfo.push(`Email: ${config.hospitalEmail}`);
+                
+                if (contactInfo.length > 0) {
+                    pdf.setFontSize(9);
+                    pdf.text(contactInfo.join(' | '), centerX, currentY, { align: 'center' });
+                    currentY += 8;
+                }
+
+                // Separator line
+                const lineY = currentY + 2;
+                pdf.setLineWidth(0.5);
+                pdf.line(15, lineY, maxWidth - 15, lineY);
+                
+                // Main title - centered below separator
+                pdf.setFontSize(16);
+                pdf.setFont(undefined, 'bold');
+                pdf.text(`LEMBAR PEMANTAUAN ${dataTypeNames[currentDataType]}`, centerX, lineY + 10, { align: 'center' });
+                
+                // Room and period info - left aligned
+                pdf.setFontSize(12);
+                pdf.setFont(undefined, 'normal');
+                pdf.text(`Ruangan: ${currentRoom.name}`, 15, lineY + 22);
+                pdf.text(`Periode: ${monthNames[currentViewMonth]} ${currentViewYear}`, 15, lineY + 30);
+                
+                return lineY + 40; // Return Y position for content
+            }
 
             // Page 1: Header and Chart (Landscape F4)
-            // Add header with logos and custom text
-            pdf.setFontSize(16);
-            pdf.setFont(undefined, 'bold');
-            
-            // Add Logo 1 (kanan atas) - adjusted for landscape F4 (330mm width)
-            if (logo1Image) {
-                pdf.addImage(logo1Image, 'PNG', 300, 10, 20, 20);
-            } else {
-                // Fallback jika gambar tidak bisa dimuat
-                pdf.setFillColor(37, 99, 235);
-                pdf.rect(300, 10, 20, 20, 'F');
-                pdf.setTextColor(255, 255, 255);
-                pdf.setFontSize(10);
-                pdf.text('LOGO1', 310, 22, { align: 'center' });
-            }
-            
-            // Add Logo 2 (kiri atas)
-            if (logo2Image) {
-                pdf.addImage(logo2Image, 'PNG', 10, 10, 20, 20);
-            } else {
-                // Fallback jika gambar tidak bisa dimuat
-                pdf.setFillColor(5, 150, 105);
-                pdf.rect(10, 10, 20, 20, 'F');
-                pdf.setTextColor(255, 255, 255);
-                pdf.setFontSize(10);
-                pdf.text('LOGO2', 20, 22, { align: 'center' });
-            }
-
-            // Main title - centered for landscape menggunakan konfigurasi custom
-            pdf.setTextColor(0, 0, 0);
-            pdf.setFontSize(16);
-            pdf.text(`${HEADER_CONFIG.mainTitle} ${dataTypeNames[currentDataType]}`, 165, 20, { align: 'center' });
-            pdf.setFontSize(14);
-            pdf.text(HEADER_CONFIG.subTitle, 165, 28, { align: 'center' });
-            
-            // Tambahkan alamat jika ada
-            if (HEADER_CONFIG.address) {
-                pdf.setFontSize(10);
-                pdf.text(HEADER_CONFIG.address, 165, 35, { align: 'center' });
-            }
-
-            // Room name, month, year
-            pdf.setFontSize(12);
-            const yPosition = HEADER_CONFIG.address ? 45 : 40;
-            pdf.text(`Ruangan: ${currentRoom.name}`, 165, yPosition, { align: 'center' });
-            pdf.text(`Periode: ${monthNames[currentViewMonth]} ${currentViewYear}`, 165, yPosition + 8, { align: 'center' });
+            const contentStartY = drawHeader(pdf, true);
 
             // Capture chart - larger for landscape
             const chartCanvas = document.getElementById('detailChart');
@@ -2141,71 +2283,24 @@ ORDER BY md.date DESC;</code></pre>
             });
             
             const chartImgData = chartImage.toDataURL('image/png');
-            pdf.addImage(chartImgData, 'PNG', 20, 60, 290, 120);
+            pdf.addImage(chartImgData, 'PNG', 20, contentStartY, 290, 120);
 
             // Page 2: Data Table (Portrait F4)
-            // Add new page in portrait orientation
             pdf.addPage([210, 330], 'p');
-            
-            // Add header again - adjusted for portrait F4 dengan logo custom
-            pdf.setFontSize(16);
-            pdf.setFont(undefined, 'bold');
-            
-            // Add Logo 1 (kanan atas) - back to portrait positioning
-            if (logo1Image) {
-                pdf.addImage(logo1Image, 'PNG', 175, 10, 20, 20);
-            } else {
-                // Fallback jika gambar tidak bisa dimuat
-                pdf.setFillColor(37, 99, 235);
-                pdf.rect(175, 10, 20, 20, 'F');
-                pdf.setTextColor(255, 255, 255);
-                pdf.setFontSize(10);
-                pdf.text('LOGO1', 185, 22, { align: 'center' });
-            }
-            
-            // Add Logo 2 (kiri atas)
-            if (logo2Image) {
-                pdf.addImage(logo2Image, 'PNG', 15, 10, 20, 20);
-            } else {
-                // Fallback jika gambar tidak bisa dimuat
-                pdf.setFillColor(5, 150, 105);
-                pdf.rect(15, 10, 20, 20, 'F');
-                pdf.setTextColor(255, 255, 255);
-                pdf.setFontSize(10);
-                pdf.text('LOGO2', 25, 22, { align: 'center' });
-            }
+            const tableStartY = drawHeader(pdf, false);
 
-            // Main title - centered for portrait F4 menggunakan konfigurasi custom
-            pdf.setTextColor(0, 0, 0);
-            pdf.setFontSize(16);
-            pdf.text(`${HEADER_CONFIG.mainTitle} ${dataTypeNames[currentDataType]}`, 105, 20, { align: 'center' });
-            pdf.setFontSize(14);
-            pdf.text(HEADER_CONFIG.subTitle, 105, 28, { align: 'center' });
-            
-            // Tambahkan alamat jika ada
-            if (HEADER_CONFIG.address) {
-                pdf.setFontSize(10);
-                pdf.text(HEADER_CONFIG.address, 105, 35, { align: 'center' });
-            }
-
-            // Room name, month, year
-            pdf.setFontSize(12);
-            const yPositionPage2 = HEADER_CONFIG.address ? 45 : 40;
-            pdf.text(`Ruangan: ${currentRoom.name}`, 105, yPositionPage2, { align: 'center' });
-            pdf.text(`Periode: ${monthNames[currentViewMonth]} ${currentViewYear}`, 105, yPositionPage2 + 8, { align: 'center' });
-
-            // Data table - adjusted for F4 portrait
+            // Data table
             pdf.setFontSize(14);
             pdf.setFont(undefined, 'bold');
-            pdf.text('DATA TERCATAT', 105, 60, { align: 'center' });
+            pdf.text('DATA TERCATAT', 105, tableStartY + 10, { align: 'center' });
 
-            // Table headers - wider for F4
+            // Table headers
             pdf.setFontSize(11);
             pdf.setFont(undefined, 'bold');
-            const startY = 75;
+            const startY = tableStartY + 25;
             const rowHeight = 10;
             
-            // Draw table header - wider columns for F4
+            // Draw table header
             pdf.rect(15, startY, 180, rowHeight);
             pdf.text('Tanggal', 20, startY + 6);
             pdf.text('Shift', 70, startY + 6);
@@ -2217,7 +2312,7 @@ ORDER BY md.date DESC;</code></pre>
             let currentY = startY + rowHeight;
             
             filteredData.forEach((entry, index) => {
-                if (currentY > 310) { // Check if we need a new page (F4 height is 330mm)
+                if (currentY > 310) {
                     pdf.addPage([210, 330], 'p');
                     currentY = 20;
                 }
@@ -2274,5 +2369,5 @@ ORDER BY md.date DESC;</code></pre>
             showSuccessMessage('PDF berhasil diexport!');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98ee30b216f54ac1',t:'MTc2MDUxOTQ5OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98ee4f24b7baa396',t:'MTc2MDUyMDc0Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
