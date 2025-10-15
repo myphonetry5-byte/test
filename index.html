@@ -831,32 +831,50 @@ ORDER BY md.date DESC;</code></pre>
 
         // Setup logo upload event handlers
         function setupLogoUploadHandlers() {
-            // Main config modal handlers
-            document.getElementById('logo1File').addEventListener('change', function(e) {
-                handleLogoUpload(e, 'logo1');
-            });
+            // Main config modal handlers - with error checking
+            const logo1File = document.getElementById('logo1File');
+            if (logo1File) {
+                logo1File.addEventListener('change', function(e) {
+                    handleLogoUpload(e, 'logo1');
+                });
+            }
             
-            document.getElementById('logo2File').addEventListener('change', function(e) {
-                handleLogoUpload(e, 'logo2');
-            });
+            const logo2File = document.getElementById('logo2File');
+            if (logo2File) {
+                logo2File.addEventListener('change', function(e) {
+                    handleLogoUpload(e, 'logo2');
+                });
+            }
             
-            // Quick config handlers
-            document.getElementById('quickLogo1File').addEventListener('change', function(e) {
-                handleQuickLogoUpload(e, 'quickLogo1');
-            });
+            // Quick config handlers - with error checking
+            const quickLogo1File = document.getElementById('quickLogo1File');
+            if (quickLogo1File) {
+                quickLogo1File.addEventListener('change', function(e) {
+                    handleQuickLogoUpload(e, 'quickLogo1File');
+                });
+            }
             
-            document.getElementById('quickLogo2File').addEventListener('change', function(e) {
-                handleQuickLogoUpload(e, 'quickLogo2');
-            });
+            const quickLogo2File = document.getElementById('quickLogo2File');
+            if (quickLogo2File) {
+                quickLogo2File.addEventListener('change', function(e) {
+                    handleQuickLogoUpload(e, 'quickLogo2File');
+                });
+            }
             
-            // URL input handlers for preview
-            document.getElementById('logo1Url').addEventListener('input', function(e) {
-                handleLogoUrlPreview(e.target.value, 'logo1');
-            });
+            // URL input handlers for preview - with error checking
+            const logo1Url = document.getElementById('logo1Url');
+            if (logo1Url) {
+                logo1Url.addEventListener('input', function(e) {
+                    handleLogoUrlPreview(e.target.value, 'logo1');
+                });
+            }
             
-            document.getElementById('logo2Url').addEventListener('input', function(e) {
-                handleLogoUrlPreview(e.target.value, 'logo2');
-            });
+            const logo2Url = document.getElementById('logo2Url');
+            if (logo2Url) {
+                logo2Url.addEventListener('input', function(e) {
+                    handleLogoUrlPreview(e.target.value, 'logo2');
+                });
+            }
         }
 
         // Handle logo file upload
@@ -880,8 +898,11 @@ ORDER BY md.date DESC;</code></pre>
             reader.onload = function(e) {
                 const base64Data = e.target.result;
                 
-                // Clear URL input when file is uploaded
-                document.getElementById(logoId + 'Url').value = '';
+                // Clear URL input when file is uploaded - with error handling
+                const urlInput = document.getElementById(logoId + 'Url');
+                if (urlInput) {
+                    urlInput.value = '';
+                }
                 
                 // Show preview
                 showLogoPreview(base64Data, logoId);
@@ -920,9 +941,12 @@ ORDER BY md.date DESC;</code></pre>
             reader.onload = function(e) {
                 const base64Data = e.target.result;
                 
-                // Clear URL input when file is uploaded
+                // Clear URL input when file is uploaded - with error handling
                 const urlInputId = logoId.replace('File', 'Url');
-                document.getElementById(urlInputId).value = '';
+                const urlInput = document.getElementById(urlInputId);
+                if (urlInput) {
+                    urlInput.value = '';
+                }
                 
                 // Store in localStorage with special prefix
                 const storageKey = logoId === 'quickLogo1File' ? 'logoFile_logo1' : 'logoFile_logo2';
@@ -2535,17 +2559,41 @@ ORDER BY md.date DESC;</code></pre>
             };
 
             // Function to load image and handle errors
-            async function loadImage(url) {
-                if (!url) return null;
+            async function loadImage(src) {
+                if (!src) return null;
+                
                 return new Promise((resolve) => {
+                    // If it's already a base64 data URL, resolve immediately
+                    if (src.startsWith('data:image/')) {
+                        console.log('Using base64 data directly');
+                        resolve(src);
+                        return;
+                    }
+                    
+                    // For external URLs, try to load as image
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
-                    img.onload = () => resolve(img);
+                    img.onload = () => {
+                        try {
+                            // Convert to canvas to get base64
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            ctx.drawImage(img, 0, 0);
+                            const base64 = canvas.toDataURL('image/png');
+                            console.log('Successfully converted URL to base64');
+                            resolve(base64);
+                        } catch (error) {
+                            console.log('Failed to convert image to base64:', error);
+                            resolve(null);
+                        }
+                    };
                     img.onerror = () => {
-                        console.log('Failed to load image from URL:', url);
+                        console.log('Failed to load image from URL:', src);
                         resolve(null);
                     };
-                    img.src = url;
+                    img.src = src;
                 });
             }
 
@@ -2554,7 +2602,7 @@ ORDER BY md.date DESC;</code></pre>
                 // Check if there's an uploaded file first
                 const uploadedFile = localStorage.getItem(`logoFile_${logoId}`);
                 if (uploadedFile) {
-                    console.log(`Using uploaded file for ${logoId}`);
+                    console.log(`Found uploaded file for ${logoId}, length:`, uploadedFile.length);
                     return uploadedFile;
                 }
                 
@@ -2564,6 +2612,7 @@ ORDER BY md.date DESC;</code></pre>
                     return urlFromConfig;
                 }
                 
+                console.log(`No logo source found for ${logoId}`);
                 return null;
             }
 
@@ -2571,17 +2620,15 @@ ORDER BY md.date DESC;</code></pre>
             const logo1Source = getLogoSource('logo1', config.logo1Url);
             const logo2Source = getLogoSource('logo2', config.logo2Url);
 
+            console.log('Logo 1 source:', logo1Source ? 'Found' : 'Not found');
+            console.log('Logo 2 source:', logo2Source ? 'Found' : 'Not found');
+
             // Load logos
-            const logo1Image = await loadImage(logo1Source);
-            const logo2Image = await loadImage(logo2Source);
+            const logo1Data = await loadImage(logo1Source);
+            const logo2Data = await loadImage(logo2Source);
             
-            // Debug logging
-            if (logo1Source && !logo1Image) {
-                console.log('Logo 1 failed to load from source:', logo1Source);
-            }
-            if (logo2Source && !logo2Image) {
-                console.log('Logo 2 failed to load from source:', logo2Source);
-            }
+            console.log('Logo 1 loaded:', logo1Data ? 'Success' : 'Failed');
+            console.log('Logo 2 loaded:', logo2Data ? 'Success' : 'Failed');
 
             // Function to draw header for both pages
             function drawHeader(pdf, isLandscape = true) {
@@ -2591,15 +2638,56 @@ ORDER BY md.date DESC;</code></pre>
                 pdf.setTextColor(0, 0, 0);
                 pdf.setFont(undefined, 'bold');
                 
+                // Function to detect image format from base64
+                function getImageFormat(base64String) {
+                    if (base64String.includes('data:image/jpeg') || base64String.includes('data:image/jpg')) {
+                        return 'JPEG';
+                    } else if (base64String.includes('data:image/png')) {
+                        return 'PNG';
+                    } else if (base64String.includes('data:image/gif')) {
+                        return 'GIF';
+                    } else if (base64String.includes('data:image/webp')) {
+                        return 'WEBP';
+                    }
+                    return 'PNG'; // Default fallback
+                }
+
                 // Add Logo 1 (kiri atas)
-                if (logo1Image) {
-                    pdf.addImage(logo1Image, 'PNG', 15, 10, 20, 20);
+                if (logo1Data) {
+                    try {
+                        console.log('Adding logo 1 to PDF');
+                        const format1 = getImageFormat(logo1Data);
+                        console.log('Logo 1 format detected:', format1);
+                        pdf.addImage(logo1Data, format1, 15, 10, 20, 20);
+                    } catch (error) {
+                        console.log('Error adding logo 1 to PDF:', error);
+                        // Try with different format as fallback
+                        try {
+                            pdf.addImage(logo1Data, 'JPEG', 15, 10, 20, 20);
+                        } catch (error2) {
+                            console.log('Fallback also failed for logo 1:', error2);
+                        }
+                    }
                 }
                 
                 // Add Logo 2 (kanan atas)
-                if (logo2Image) {
-                    const rightX = isLandscape ? 295 : 175;
-                    pdf.addImage(logo2Image, 'PNG', rightX, 10, 20, 20);
+                if (logo2Data) {
+                    try {
+                        console.log('Adding logo 2 to PDF');
+                        const rightX = isLandscape ? 295 : 175;
+                        const format2 = getImageFormat(logo2Data);
+                        console.log('Logo 2 format detected:', format2);
+                        pdf.addImage(logo2Data, format2, rightX, 10, 20, 20);
+                    } catch (error) {
+                        console.log('Error adding logo 2 to PDF:', error);
+                        // Try with different format as fallback
+                        try {
+                            const rightX = isLandscape ? 295 : 175;
+                            pdf.addImage(logo2Data, 'JPEG', rightX, 10, 20, 20);
+                        } catch (error2) {
+                            console.log('Fallback also failed for logo 2:', error2);
+                        }
+                    }
                 }
 
                 // Hospital name - centered
@@ -2742,5 +2830,5 @@ ORDER BY md.date DESC;</code></pre>
             showSuccessMessage('PDF berhasil diexport!');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98ee9e6fc400a396',t:'MTc2MDUyMzk5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98eeab339474a396',t:'MTc2MDUyNDUxNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
