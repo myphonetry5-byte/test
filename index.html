@@ -257,17 +257,54 @@
                             </div>
                         </div>
 
-                        <!-- Logo URLs -->
+                        <!-- Logo Upload/URL Options -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">URL Logo Kiri (Opsional)</label>
-                                <input type="url" id="logo1Url" placeholder="https://example.com/logo1.png" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                                <p class="text-xs text-gray-500 mt-1">Logo akan ditampilkan di kiri atas. Gunakan URL gambar yang dapat diakses publik (PNG/JPG)</p>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Logo Kiri (Opsional)</label>
+                                
+                                <!-- Upload Option -->
+                                <div class="mb-3">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">📁 Upload dari Komputer:</label>
+                                    <input type="file" id="logo1File" accept="image/*" class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                </div>
+                                
+                                <!-- URL Option -->
+                                <div class="mb-3">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">🌐 Atau gunakan URL:</label>
+                                    <input type="url" id="logo1Url" placeholder="https://example.com/logo1.png" class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                </div>
+                                
+                                <!-- Preview -->
+                                <div id="logo1Preview" class="hidden mt-2 p-2 bg-gray-50 rounded-lg">
+                                    <p class="text-xs text-gray-600 mb-1">Preview:</p>
+                                    <img id="logo1PreviewImg" src="" alt="Logo 1 Preview" class="max-w-16 max-h-16 object-contain border rounded">
+                                </div>
+                                
+                                <p class="text-xs text-gray-500 mt-1">Logo akan ditampilkan di kiri atas header PDF</p>
                             </div>
+                            
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">URL Logo Kanan (Opsional)</label>
-                                <input type="url" id="logo2Url" placeholder="https://example.com/logo2.png" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                                <p class="text-xs text-gray-500 mt-1">Logo akan ditampilkan di kanan atas. Gunakan URL gambar yang dapat diakses publik (PNG/JPG)</p>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Logo Kanan (Opsional)</label>
+                                
+                                <!-- Upload Option -->
+                                <div class="mb-3">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">📁 Upload dari Komputer:</label>
+                                    <input type="file" id="logo2File" accept="image/*" class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                </div>
+                                
+                                <!-- URL Option -->
+                                <div class="mb-3">
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">🌐 Atau gunakan URL:</label>
+                                    <input type="url" id="logo2Url" placeholder="https://example.com/logo2.png" class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                                </div>
+                                
+                                <!-- Preview -->
+                                <div id="logo2Preview" class="hidden mt-2 p-2 bg-gray-50 rounded-lg">
+                                    <p class="text-xs text-gray-600 mb-1">Preview:</p>
+                                    <img id="logo2PreviewImg" src="" alt="Logo 2 Preview" class="max-w-16 max-h-16 object-contain border rounded">
+                                </div>
+                                
+                                <p class="text-xs text-gray-500 mt-1">Logo akan ditampilkan di kanan atas header PDF</p>
                             </div>
                         </div>
 
@@ -275,11 +312,12 @@
                         <div class="bg-amber-50 p-4 rounded-lg">
                             <h4 class="font-semibold text-amber-800 mb-2">💡 Tips untuk Logo:</h4>
                             <ul class="text-sm text-amber-700 space-y-1 list-disc list-inside">
-                                <li>Gunakan URL gambar yang dapat diakses publik (tidak memerlukan login)</li>
-                                <li>Format yang didukung: PNG, JPG, JPEG</li>
-                                <li>Ukuran optimal: 200x200 pixel atau lebih kecil</li>
+                                <li><strong>📁 Upload File:</strong> Pilih gambar dari komputer Anda (maksimal 2MB)</li>
+                                <li><strong>🌐 Gunakan URL:</strong> Masukkan link gambar yang dapat diakses publik</li>
+                                <li>Format yang didukung: PNG, JPG, JPEG, GIF</li>
+                                <li>Ukuran optimal: 200x200 pixel atau lebih kecil untuk hasil terbaik</li>
+                                <li>Upload file lebih reliable daripada URL eksternal</li>
                                 <li>Contoh layanan hosting gambar gratis: <a href="https://imgur.com" target="_blank" class="underline">Imgur</a>, <a href="https://postimg.cc" target="_blank" class="underline">PostImg</a></li>
-                                <li>Jika logo tidak muncul, periksa URL dapat dibuka di browser</li>
                             </ul>
                         </div>
 
@@ -706,12 +744,14 @@ ORDER BY md.date DESC;</code></pre>
                                     </div>
                                     <div class="grid grid-cols-2 gap-2">
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Logo Kiri URL</label>
-                                            <input type="url" id="quickLogo1Url" placeholder="https://..." class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Logo Kiri</label>
+                                            <input type="file" id="quickLogo1File" accept="image/*" class="w-full p-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-1">
+                                            <input type="url" id="quickLogo1Url" placeholder="atau URL..." class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                         </div>
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Logo Kanan URL</label>
-                                            <input type="url" id="quickLogo2Url" placeholder="https://..." class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Logo Kanan</label>
+                                            <input type="file" id="quickLogo2File" accept="image/*" class="w-full p-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-1">
+                                            <input type="url" id="quickLogo2Url" placeholder="atau URL..." class="w-full p-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                         </div>
                                     </div>
                                     <div class="flex gap-2 pt-2">
@@ -782,9 +822,165 @@ ORDER BY md.date DESC;</code></pre>
             // Load Supabase config
             loadSupabaseConfig();
             
+            // Setup logo upload handlers
+            setupLogoUploadHandlers();
+            
             showHomePage();
             renderRooms();
         });
+
+        // Setup logo upload event handlers
+        function setupLogoUploadHandlers() {
+            // Main config modal handlers
+            document.getElementById('logo1File').addEventListener('change', function(e) {
+                handleLogoUpload(e, 'logo1');
+            });
+            
+            document.getElementById('logo2File').addEventListener('change', function(e) {
+                handleLogoUpload(e, 'logo2');
+            });
+            
+            // Quick config handlers
+            document.getElementById('quickLogo1File').addEventListener('change', function(e) {
+                handleQuickLogoUpload(e, 'quickLogo1');
+            });
+            
+            document.getElementById('quickLogo2File').addEventListener('change', function(e) {
+                handleQuickLogoUpload(e, 'quickLogo2');
+            });
+            
+            // URL input handlers for preview
+            document.getElementById('logo1Url').addEventListener('input', function(e) {
+                handleLogoUrlPreview(e.target.value, 'logo1');
+            });
+            
+            document.getElementById('logo2Url').addEventListener('input', function(e) {
+                handleLogoUrlPreview(e.target.value, 'logo2');
+            });
+        }
+
+        // Handle logo file upload
+        function handleLogoUpload(event, logoId) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showErrorMessage('File harus berupa gambar (PNG, JPG, GIF, dll)');
+                return;
+            }
+            
+            // Validate file size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                showErrorMessage('Ukuran file maksimal 2MB');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Data = e.target.result;
+                
+                // Clear URL input when file is uploaded
+                document.getElementById(logoId + 'Url').value = '';
+                
+                // Show preview
+                showLogoPreview(base64Data, logoId);
+                
+                // Store in localStorage with special prefix
+                localStorage.setItem(`logoFile_${logoId}`, base64Data);
+                
+                showSuccessMessage(`Logo ${logoId === 'logo1' ? 'kiri' : 'kanan'} berhasil diupload!`);
+            };
+            
+            reader.onerror = function() {
+                showErrorMessage('Gagal membaca file. Silakan coba lagi.');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        // Handle quick config logo upload
+        function handleQuickLogoUpload(event, logoId) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showErrorMessage('File harus berupa gambar (PNG, JPG, GIF, dll)');
+                return;
+            }
+            
+            // Validate file size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                showErrorMessage('Ukuran file maksimal 2MB');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Data = e.target.result;
+                
+                // Clear URL input when file is uploaded
+                const urlInputId = logoId.replace('File', 'Url');
+                document.getElementById(urlInputId).value = '';
+                
+                // Store in localStorage with special prefix
+                const storageKey = logoId === 'quickLogo1File' ? 'logoFile_logo1' : 'logoFile_logo2';
+                localStorage.setItem(storageKey, base64Data);
+                
+                showSuccessMessage(`Logo ${logoId.includes('1') ? 'kiri' : 'kanan'} berhasil diupload!`);
+            };
+            
+            reader.onerror = function() {
+                showErrorMessage('Gagal membaca file. Silakan coba lagi.');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        // Handle logo URL preview
+        function handleLogoUrlPreview(url, logoId) {
+            if (!url) {
+                hideLogoPreview(logoId);
+                return;
+            }
+            
+            // Clear uploaded file when URL is entered
+            localStorage.removeItem(`logoFile_${logoId}`);
+            
+            // Show preview after a short delay to avoid too many requests
+            clearTimeout(window[`${logoId}PreviewTimeout`]);
+            window[`${logoId}PreviewTimeout`] = setTimeout(() => {
+                showLogoPreview(url, logoId);
+            }, 500);
+        }
+
+        // Show logo preview
+        function showLogoPreview(src, logoId) {
+            const previewDiv = document.getElementById(logoId + 'Preview');
+            const previewImg = document.getElementById(logoId + 'PreviewImg');
+            
+            if (previewDiv && previewImg) {
+                previewImg.src = src;
+                previewImg.onload = function() {
+                    previewDiv.classList.remove('hidden');
+                };
+                previewImg.onerror = function() {
+                    hideLogoPreview(logoId);
+                    if (!src.startsWith('data:')) {
+                        showErrorMessage('Gagal memuat preview logo. Periksa URL gambar.');
+                    }
+                };
+            }
+        }
+
+        // Hide logo preview
+        function hideLogoPreview(logoId) {
+            const previewDiv = document.getElementById(logoId + 'Preview');
+            if (previewDiv) {
+                previewDiv.classList.add('hidden');
+            }
+        }
 
         // Dark Mode Toggle
         function toggleDarkMode() {
@@ -1796,7 +1992,7 @@ ORDER BY md.date DESC;</code></pre>
                 logo2Url: document.getElementById('logo2Url').value.trim()
             };
 
-            // Save configuration
+            // Save configuration (URLs only, uploaded files are stored separately)
             localStorage.setItem('pdfHeaderConfig', JSON.stringify(config));
             
             // Hide modal and export PDF
@@ -2281,7 +2477,7 @@ ORDER BY md.date DESC;</code></pre>
                 logo2Url: document.getElementById('quickLogo2Url').value.trim()
             };
 
-            // Save configuration
+            // Save configuration (URLs only, uploaded files are stored separately)
             localStorage.setItem('pdfHeaderConfig', JSON.stringify(config));
             hideConfigMenu();
             showSuccessMessage('Konfigurasi PDF berhasil disimpan!');
@@ -2345,14 +2541,47 @@ ORDER BY md.date DESC;</code></pre>
                     const img = new Image();
                     img.crossOrigin = 'anonymous';
                     img.onload = () => resolve(img);
-                    img.onerror = () => resolve(null);
+                    img.onerror = () => {
+                        console.log('Failed to load image from URL:', url);
+                        resolve(null);
+                    };
                     img.src = url;
                 });
             }
 
+            // Function to get logo source (prioritize uploaded file over URL)
+            function getLogoSource(logoId, urlFromConfig) {
+                // Check if there's an uploaded file first
+                const uploadedFile = localStorage.getItem(`logoFile_${logoId}`);
+                if (uploadedFile) {
+                    console.log(`Using uploaded file for ${logoId}`);
+                    return uploadedFile;
+                }
+                
+                // Fallback to URL if no uploaded file
+                if (urlFromConfig) {
+                    console.log(`Using URL for ${logoId}:`, urlFromConfig);
+                    return urlFromConfig;
+                }
+                
+                return null;
+            }
+
+            // Get logo sources (prioritize uploaded files)
+            const logo1Source = getLogoSource('logo1', config.logo1Url);
+            const logo2Source = getLogoSource('logo2', config.logo2Url);
+
             // Load logos
-            const logo1Image = await loadImage(config.logo1Url);
-            const logo2Image = await loadImage(config.logo2Url);
+            const logo1Image = await loadImage(logo1Source);
+            const logo2Image = await loadImage(logo2Source);
+            
+            // Debug logging
+            if (logo1Source && !logo1Image) {
+                console.log('Logo 1 failed to load from source:', logo1Source);
+            }
+            if (logo2Source && !logo2Image) {
+                console.log('Logo 2 failed to load from source:', logo2Source);
+            }
 
             // Function to draw header for both pages
             function drawHeader(pdf, isLandscape = true) {
@@ -2513,5 +2742,5 @@ ORDER BY md.date DESC;</code></pre>
             showSuccessMessage('PDF berhasil diexport!');
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98ee8af736584ac1',t:'MTc2MDUyMzE5Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98ee9e6fc400a396',t:'MTc2MDUyMzk5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
